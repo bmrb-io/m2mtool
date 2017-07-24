@@ -34,6 +34,7 @@ import logging
 
 # pip/repo installed packages
 import psycopg2
+from psycopg2.extras import DictCursor
 from psycopg2 import ProgrammingError
 
 # Local packages
@@ -74,6 +75,31 @@ def get_postgres_connection(user=configuration['psql']['user'],
 
     return conn, cur
 
+def get_software(vm_id=2):
+    """ Returns a dictionary of the known software packages."""
+
+    # In the future potentially get version from /etc/nmrbox_version
+
+    cur = get_postgres_connection(database="registry", dictionary_cursor=True)[1]
+    cur.execute('''
+SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.email,pr.address1
+  FROM software as sw
+  LEFT JOIN software_versions as sv
+    ON sw.id = sv.software_id
+  LEFT JOIN software_version_vm as svvm
+    ON svvm.software_version_id = sv.id
+  LEFT JOIN person_software as w
+    ON w.software_id = sw.id
+  LEFT JOIN persons as pr
+    ON w.person_id = pr.id
+  WHERE svvm.vm_id = %s''', [vm_id])
+
+    res = {}
+    for package in cur:
+        res[package['slug']] = dict(package)
+
+    return res
+
 def print_user_activity(username, directory):
     """ Prints a summary of the users activity."""
 
@@ -90,7 +116,8 @@ SELECT runtime,cwd,filename,cmd FROM snoopy
 
 def main(args):
 
-    print_user_activity(args[1], args[2])
+    get_software()
+    #print_user_activity(args[1], args[2])
     return 0
 
 # Run the code in this module
