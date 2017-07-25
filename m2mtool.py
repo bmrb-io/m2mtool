@@ -96,7 +96,7 @@ SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.ema
 
     res = {}
     for package in cur:
-        res[package['slug']] = dict(package)
+        res[package['software_path']] = dict(package)
 
     return res
 
@@ -106,9 +106,16 @@ def build_software_saveframe(software_packages):
 
     entry = pynmrstar.Entry.from_scratch('TBD')
 
-    for x, package in enumerate(software_packages):
+    package_id = 1
+    for package in software_packages:
         frame = pynmrstar.Saveframe.from_template("software", package['slug'])
-        frame.add_tag("ID", x, update=True)
+
+        try:
+            entry.add_saveframe(frame)
+        except ValueError:
+            continue
+
+        frame.add_tag("ID", package_id, update=True)
         frame.add_tag("Entry_ID", 'TBD', update=True)
         frame.add_tag("Name", package['slug'], update=True)
         frame.add_tag("Version", package['version'], update=True)
@@ -125,15 +132,16 @@ def build_software_saveframe(software_packages):
             name = fname
         else:
             name = fname + " " + lname
-        vendor = [name, None, package["email"], "TBD", x]
+        vendor = [name, None, package["email"], "TBD", package_id]
         if vendor[0] or vendor[1] or vendor[2]:
             frame['_Vendor'].add_data(vendor)
 
-        entry.add_saveframe(frame)
+        package_id += 1
+
 
     return(entry)
 
-def print_user_activity(username, directory):
+def get_user_activity(username, directory):
     """ Prints a summary of the users activity."""
 
     cur = get_postgres_connection()[1]
@@ -141,18 +149,25 @@ def print_user_activity(username, directory):
 SELECT runtime,cwd,filename,cmd FROM snoopy
   WHERE username = %s AND cwd like %s
   ORDER BY runtime ASC''', [username, directory])
-    activities = cur.fetchall()
 
-    for activity in activities:
-        print(activity[0], activity[1], activity[2], activity[3])
-
+    return cur.fetchall()
 
 def main(args):
 
     # To print all
-    print(build_software_saveframe(list(get_software().values())))
+    #print(build_software_saveframe(list(get_software().values())))
 
-    print_user_activity(args[1], args[2])
+    software = get_software()
+    activities = []
+    for activity in get_user_activity(args[1], args[2]):
+        if not activity[2].startswith("/usr/software"):
+            continue
+        sw_path = os.path.join("/usr/software", activity[2].split("/")[3])
+
+        if sw_path in software:
+            activities.append(software[sw_path])
+
+    print(build_software_saveframe(activities))
     return 0
 
 # Run the code in this module
