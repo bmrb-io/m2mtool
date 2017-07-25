@@ -38,7 +38,7 @@ from psycopg2.extras import DictCursor
 from psycopg2 import ProgrammingError
 
 # Local packages
-from PyNMRSTAR import bmrb
+from PyNMRSTAR import bmrb as pynmrstar
 
 #########################
 # Module initialization #
@@ -100,6 +100,39 @@ SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.ema
 
     return res
 
+def build_software_saveframe(software_packages):
+    """ Builds NMR-STAR saveframes for the software packages. Pass a list of
+    software package dictionary (as returned by get_software)."""
+
+    entry = pynmrstar.Entry.from_scratch('TBD')
+
+    for x, package in enumerate(software_packages):
+        frame = pynmrstar.Saveframe.from_template("software", package['slug'])
+        frame.add_tag("ID", x, update=True)
+        frame.add_tag("Entry_ID", 'TBD', update=True)
+        frame.add_tag("Name", package['slug'], update=True)
+        frame.add_tag("Version", package['version'], update=True)
+        frame.add_tag("Details", package['synopsis'], update=True)
+
+        # Add to the vendor loop if we have useful data
+        fname = package["first_name"]
+        lname = package["last_name"]
+        if not fname and not lname:
+            name = None
+        elif not fname:
+            name = lname
+        elif not lname:
+            name = fname
+        else:
+            name = fname + " " + lname
+        vendor = [name, None, package["email"], "TBD", x]
+        if vendor[0] or vendor[1] or vendor[2]:
+            frame['_Vendor'].add_data(vendor)
+
+        entry.add_saveframe(frame)
+
+    return(entry)
+
 def print_user_activity(username, directory):
     """ Prints a summary of the users activity."""
 
@@ -116,8 +149,10 @@ SELECT runtime,cwd,filename,cmd FROM snoopy
 
 def main(args):
 
-    get_software()
-    #print_user_activity(args[1], args[2])
+    # To print all
+    print(build_software_saveframe(list(get_software().values())))
+
+    print_user_activity(args[1], args[2])
     return 0
 
 # Run the code in this module
