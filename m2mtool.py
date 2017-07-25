@@ -159,13 +159,16 @@ def main(args):
 
     software = get_software()
     activities = []
+    activities_dict = {}
     for activity in get_user_activity(args[1], args[2]):
         if not activity[2].startswith("/usr/software"):
             continue
         sw_path = os.path.join("/usr/software", activity[2].split("/")[3])
 
-        if sw_path in software:
-            activities.append(software[sw_path])
+        if sw_path not in activities_dict:
+            if sw_path in software:
+                activities.append(software[sw_path])
+                activities_dict[sw_path] = True
 
     print(build_software_saveframe(activities))
     return 0
