@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 #
 #  m2mtool.py
@@ -26,11 +26,15 @@
 # Imports #
 ###########
 
+from __future__ import print_function
+
 # Standard lib packages
 import os
+import pwd
 import sys
 import json
 import logging
+from tempfile import NamedTemporaryFile
 
 # pip/repo installed packages
 import psycopg2
@@ -141,14 +145,16 @@ def build_software_saveframe(software_packages):
 
     return(entry)
 
-def get_user_activity(username, directory):
+def get_user_activity(directory):
     """ Prints a summary of the users activity."""
+
+    username = pwd.getpwuid(os.getuid()).pw_name
 
     cur = get_postgres_connection()[1]
     cur.execute('''
 SELECT runtime,cwd,filename,cmd FROM snoopy
   WHERE username = %s AND cwd like %s
-  ORDER BY runtime ASC''', [username, directory])
+  ORDER BY runtime ASC''', [username, directory + "%"])
 
     return cur.fetchall()
 
@@ -160,7 +166,7 @@ def main(args):
     software = get_software()
     activities = []
     activities_dict = {}
-    for activity in get_user_activity(args[1], args[2]):
+    for activity in get_user_activity(args[1]):
         if not activity[2].startswith("/usr/software"):
             continue
         sw_path = os.path.join("/usr/software", activity[2].split("/")[3])
@@ -170,7 +176,12 @@ def main(args):
                 activities.append(software[sw_path])
                 activities_dict[sw_path] = True
 
-    print(build_software_saveframe(activities))
+    with NamedTemporaryFile() as star_file:
+        star_file.write(str(build_software_saveframe(activities)))
+        star_file.flush()
+        os.system("gedit %s" % star_file.name)
+
+    #print(build_software_saveframe(activities))
     return 0
 
 # Run the code in this module
