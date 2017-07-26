@@ -26,10 +26,12 @@
 # Imports #
 ###########
 
+# Allow running in python2
 from __future__ import print_function
 
 # Standard lib packages
 import os
+import re
 import pwd
 import sys
 import json
@@ -37,14 +39,16 @@ import logging
 from tempfile import NamedTemporaryFile
 
 # pip/repo installed packages
-import psycopg2
-from psycopg2.extras import DictCursor
-from psycopg2 import ProgrammingError
+try:
+    import psycopg2
+    from psycopg2.extras import DictCursor
+    from psycopg2 import ProgrammingError
+except ImportError:
+    logging.critical("You must install psycopg2 to run this module.")
+    sys.exit(1)
 
 # Local packages
 from PyNMRSTAR import bmrb as pynmrstar
-
-pynmrstar.SKIP_EMPTY_LOOPS = True
 
 #########################
 # Module initialization #
@@ -56,6 +60,9 @@ configuration = json.loads(open(os.path.join(_DIR, "config.json"), "r").read())
 
 # Set up logging
 logging.basicConfig()
+
+# Set up pynmrstar
+pynmrstar.SKIP_EMPTY_LOOPS = True
 
 ###########
 # Methods #
@@ -81,10 +88,14 @@ def get_postgres_connection(user=configuration['psql']['user'],
 
     return conn, cur
 
-def get_software(vm_id=2):
+def get_software(vm_id=None):
     """ Returns a dictionary of the known software packages."""
 
-    # In the future potentially get version from /etc/nmrbox_version
+    # Determine the VM version
+    if not vm_id:
+        vm_id = get_vm_version()
+
+    logging.info("Getting software information.")
 
     cur = get_postgres_connection(database="registry", dictionary_cursor=True)[1]
     cur.execute('''
@@ -109,6 +120,8 @@ SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.ema
 def build_software_saveframe(software_packages):
     """ Builds NMR-STAR saveframes for the software packages. Pass a list of
     software package dictionary (as returned by get_software)."""
+
+    logging.info("Building software saveframe.")
 
     entry = pynmrstar.Entry.from_scratch('TBD')
 
@@ -151,6 +164,7 @@ def get_user_activity(directory):
     """ Prints a summary of the users activity."""
 
     username = pwd.getpwuid(os.getuid()).pw_name
+    dirmod = get_modified_time(path)
 
     cur = get_postgres_connection()[1]
     cur.execute('''
@@ -159,6 +173,22 @@ SELECT runtime,cwd,filename,cmd FROM snoopy
   ORDER BY runtime ASC''', [username, directory + "%"])
 
     return cur.fetchall()
+
+def get_vm_version():
+    """ Returns the version of the VM that is running."""
+
+    with open("/etc/nmrbox_version", "r") as nmr_version:
+        matches = re.search("Release([0-9\.]+)", nmr_version.readline())
+        if matches and len(matches.groups()) > 0:
+            return matches.groups(0)[0]
+
+    # Assume the latest version in the absense of the necessary info
+    return configuration['lastest_vm_version']
+
+def get_modified_time(path):
+    """ Returns the last modified time of the file/folder."""
+
+    return os.path.getmtime(path)
 
 def main(args):
 
@@ -183,7 +213,6 @@ def main(args):
         star_file.flush()
         os.system("gedit %s" % star_file.name)
 
-    #print(build_software_saveframe(activities))
     return 0
 
 # Run the code in this module
