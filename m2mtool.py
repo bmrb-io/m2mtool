@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 #  m2mtool.py
@@ -43,6 +43,8 @@ from psycopg2 import ProgrammingError
 
 # Local packages
 from PyNMRSTAR import bmrb as pynmrstar
+
+pynmrstar.SKIP_EMPTY_LOOPS = True
 
 #########################
 # Module initialization #
@@ -177,7 +179,7 @@ def main(args):
                 activities_dict[sw_path] = True
 
     with NamedTemporaryFile() as star_file:
-        star_file.write(str(build_software_saveframe(activities)))
+        star_file.write(str(build_software_saveframe(activities)).encode())
         star_file.flush()
         os.system("gedit %s" % star_file.name)
 

@@ -1,0 +1,7 @@
+{
+    "extensions": {
+        "application/x-bruker-timedomain": [".ser", ".fid"],
+        "text/nmrstar": [".str"],
+        "text/talos": [".tab"]
+        }
+}
