@@ -123,33 +123,36 @@ def get_entry_saveframe():
 
     registry_dict_cur = get_postgres_connection(database="registry", dictionary_cursor=True)[1]
 
-    # Get institution info from that table
-    registry_dict_cur.execute('SELECT * FROM persons WHERE nmrbox_acct=%s', [get_username()])
+    registry_dict_cur.execute('''
+SELECT institution_type as user_type, ins.name AS institution,p.*
+  FROM persons as p
+  LEFT JOIN institutions AS ins
+    ON ins.id = p.institution_id
+  WHERE p.nmrbox_acct=%s''', [get_username()])
     entry = pynmrstar.Saveframe.from_scratch("entry_information", "_Entry")
-    entry.add_tags([["ID", "TBD"], ["Sf_category", "entry_information"], ["Sf_framecode", "entry_information"]])
+    entry.add_tags([["Sf_category", "entry_information"], ["Sf_framecode", "entry_information"]])
 
     # Create the contact person loop
     contact_person = pynmrstar.Loop.from_scratch("_Contact_person")
     contact_person.add_column(["ID","Email_address", "Given_name", "Family_name",
                                "Department_and_institution", "Address_1",
                                "Address_2", "Address_3", "City", "State_province",
-                               "Country", "Postal_code", "Role", "Organization_type",
-                               "Entry_ID"])
+                               "Country", "Postal_code", "Role", "Organization_type"])
     person = dict(registry_dict_cur.fetchone())
     for x in person.keys():
         person[x] = "." if person[x] == "" else person[x]
     contact_person.add_data([1, person['email'], person['first_name'],
-                             person['last_name'], person['department'],
+                             person['last_name'], person['department'] + " " + person['institution'],
                              person['address1'], person['address2'],
                              person['address3'], person['city'],
                              person['state_province'], person['country'],
                              person['zip_code'], person['job_title'],
-                             'academic', 'TBD'])
+                             person['user_type'].lower()])
 
     # Create the entry_author loop
     entry_author = pynmrstar.Loop.from_scratch("_Entry_author")
-    entry_author.add_column(["Ordinal", "Given_name", "Family_name", "Entry_ID"])
-    entry_author.add_data([1, person['first_name'], person['last_name'], "TBD"])
+    entry_author.add_column(["Ordinal", "Given_name", "Family_name"])
+    entry_author.add_data([1, person['first_name'], person['last_name']])
 
     # Add the children loops
     entry.add_loop(contact_person)
