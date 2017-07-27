@@ -97,8 +97,9 @@ def get_software(vm_id=None):
 
     logging.info("Getting software information.")
 
-    cur = get_postgres_connection(database="registry", dictionary_cursor=True)[1]
-    cur.execute('''
+    registry_dict_cur = get_postgres_connection(database="registry", dictionary_cursor=True)[1]
+
+    registry_dict_cur.execute('''
 SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.email,pr.address1
   FROM software as sw
   LEFT JOIN software_versions as sv
@@ -112,18 +113,60 @@ SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.ema
   WHERE svvm.vm_id = %s''', [vm_id])
 
     res = {}
-    for package in cur:
+    for package in registry_dict_cur:
         res[package['software_path']] = dict(package)
 
     return res
 
-def build_software_saveframe(software_packages):
-    """ Builds NMR-STAR saveframes for the software packages. Pass a list of
+def get_entry_saveframe():
+    """ Returns information about the NMRbox user. """
+
+    registry_dict_cur = get_postgres_connection(database="registry", dictionary_cursor=True)[1]
+
+    # Get institution info from that table
+    registry_dict_cur.execute('SELECT * FROM persons WHERE nmrbox_acct=%s', [get_username()])
+    entry = pynmrstar.Saveframe.from_scratch("entry_information", "_Entry")
+    entry.add_tags([["ID", "TBD"], ["Sf_category", "entry_information"], ["Sf_framecode", "entry_information"]])
+
+    # Create the contact person loop
+    contact_person = pynmrstar.Loop.from_scratch("_Contact_person")
+    contact_person.add_column(["ID","Email_address", "Given_name", "Family_name",
+                               "Department_and_institution", "Address_1",
+                               "Address_2", "Address_3", "City", "State_province",
+                               "Country", "Postal_code", "Role", "Organization_type",
+                               "Entry_ID"])
+    person = dict(registry_dict_cur.fetchone())
+    for x in person.keys():
+        person[x] = "." if person[x] == "" else person[x]
+    contact_person.add_data([1, person['email'], person['first_name'],
+                             person['last_name'], person['department'],
+                             person['address1'], person['address2'],
+                             person['address3'], person['city'],
+                             person['state_province'], person['country'],
+                             person['zip_code'], person['job_title'],
+                             'academic', 'TBD'])
+
+    # Create the entry_author loop
+    entry_author = pynmrstar.Loop.from_scratch("_Entry_author")
+    entry_author.add_column(["Ordinal", "Given_name", "Family_name", "Entry_ID"])
+    entry_author.add_data([1, person['first_name'], person['last_name'], "TBD"])
+
+    # Add the children loops
+    entry.add_loop(contact_person)
+    entry.add_loop(entry_author)
+
+    return entry
+
+def build_entry(software_packages):
+    """ Builds a NMR-STAR entry. Pass a list of
     software package dictionary (as returned by get_software)."""
 
     logging.info("Building software saveframe.")
 
     entry = pynmrstar.Entry.from_scratch('TBD')
+
+    #dep_files = pynmrstar.Saveframe.from_template("deposited_data_files")
+    entry.add_saveframe(get_entry_saveframe())
 
     package_id = 1
     for package in software_packages:
@@ -160,27 +203,34 @@ def build_software_saveframe(software_packages):
 
     return(entry)
 
+def get_username():
+    """ Return the username of the current user."""
+
+    return pwd.getpwuid(os.getuid()).pw_name
+
 def get_user_activity(directory):
     """ Prints a summary of the users activity."""
 
-    username = pwd.getpwuid(os.getuid()).pw_name
-    dirmod = get_modified_time(path)
+    dirmod = get_modified_time(directory)
 
     cur = get_postgres_connection()[1]
     cur.execute('''
 SELECT runtime,cwd,filename,cmd FROM snoopy
   WHERE username = %s AND cwd like %s
-  ORDER BY runtime ASC''', [username, directory + "%"])
+  ORDER BY runtime ASC''', [get_username(), directory + "%"])
 
     return cur.fetchall()
 
 def get_vm_version():
     """ Returns the version of the VM that is running."""
 
-    with open("/etc/nmrbox_version", "r") as nmr_version:
-        matches = re.search("Release([0-9\.]+)", nmr_version.readline())
-        if matches and len(matches.groups()) > 0:
-            return matches.groups(0)[0]
+    try:
+        with open("/etc/nmrbox_version", "r") as nmr_version:
+            matches = re.search("Release([0-9\.]+)", nmr_version.readline())
+            if matches and len(matches.groups()) > 0:
+                return matches.groups(0)[0]
+    except IOError:
+        pass
 
     # Assume the latest version in the absense of the necessary info
     return configuration['lastest_vm_version']
@@ -190,26 +240,31 @@ def get_modified_time(path):
 
     return os.path.getmtime(path)
 
-def main(args):
+def filter_software(all_packages, path):
+    """ Returns the software packages used by this user in the selected
+    directory. """
 
-    # To print all
-    #print(build_software_saveframe(list(get_software().values())))
-
-    software = get_software()
     activities = []
     activities_dict = {}
-    for activity in get_user_activity(args[1]):
+    for activity in get_user_activity(path):
         if not activity[2].startswith("/usr/software"):
             continue
         sw_path = os.path.join("/usr/software", activity[2].split("/")[3])
 
         if sw_path not in activities_dict:
-            if sw_path in software:
-                activities.append(software[sw_path])
+            if sw_path in all_packages:
+                activities.append(all_packages[sw_path])
                 activities_dict[sw_path] = True
 
+    return activities
+
+# Demo what we can do
+def main(args):
+
+    software = filter_software(get_software(), args[1])
+
     with NamedTemporaryFile() as star_file:
-        star_file.write(str(build_software_saveframe(activities)).encode())
+        star_file.write(str(build_entry(software)).encode())
         star_file.flush()
         os.system("gedit %s" % star_file.name)
 
