@@ -1,12 +1,23 @@
 #!/usr/bin/env python3
 
+from __future__ import print_function
+
 import re
+import sys
 import logging
 import webbrowser
-#from html.parser import HTMLParser
-from HTMLParser import HTMLParser
+
+PY3 = (sys.version_info[0] == 3)
+if PY3:
+    from html.parser import HTMLParser
+else:
+    from HTMLParser import HTMLParser
 
 import requests
+
+#ssh adit@adit-alpha
+#/home/adit/adit/www/adit/sessions/bmrb-adit
+#/adit/www/adit/scratch/upload/
 
 # Set up logging
 logging.basicConfig()
@@ -51,14 +62,15 @@ file_types = {
     "upload_category_36": "Secondary structure features",
     "upload_category_37": "Atomic coordinates",
     "upload_category_38": "Mass spectrometry data",
-    "upload_category_39": "Other kinds of data"
+    "upload_category_39": "Other kinds of data",
+    "Image": "An image"
 }
 
 
 def get_session_id(text):
     """ Returns the session ID."""
 
-    matches = re.search("ufid=(.+?)&", request.text)
+    matches = re.search("ufid=(.+?)&", text)
     if matches and len(matches.groups()) > 0:
         return matches.groups(0)[0]
     else:
@@ -73,23 +85,32 @@ def get_activate_url(text):
     else:
         raise ValueError("No session.")
 
-def upload_file(the_file, session, key):
-    """ Uploads a given file to the session. """
+def upload_file(the_file, session, key, image=False):
+    """ Uploads a given file to the session.
+
+    the_file should be a (filename, type) tuple. """
 
     url = '%s/cgi-bin/bmrb-adit/upload-req-shifts' % ADIT_SERVER
     files = {'upload_fname': open(the_file[1], 'rb')}
     values = {'ufid': key, 'context': 'deposit-en', 'dbname': '',
               'email': 'wedell@bmrb.wisc.edu', 'archdir': 'bmrb', 'expmeth': 'NMR',
-              'moltype': '', 'form_has_been_submitted': 1, 'upload_category': 'NMR-STAR',
-              the_file[0]: file_types[the_file[0]], 'prev_upload_dir': '/adit/www//adit/scratch/upload/%s/' % key ,
+              'moltype': '', 'form_has_been_submitted': 1,
+              'prev_upload_dir': '/adit/www//adit/scratch/upload/%s/' % key ,
               'upload_submit': 'Upload'}
+
+    if image:
+        values['upload_category'] = 'Image'
+    else:
+        values['upload_category'] = 'NMR-STAR'
+        values[the_file[0]] = file_types[the_file[0]]
 
     logging.info("Sending file '%s' with type '%s'.", the_file[1], file_types[the_file[0]])
     request = session.post(url, files=files, data=values)
 
     # Activate the upload (don't know why this is needed...)
-    logging.info("Activating file upload.", the_file[1])
-    request = session.get(get_activate_url(request.text))
+    logging.info("Activating file upload pt1.", the_file[1])
+    request = session.get("%s/cgi-bin/bmrb-adit/mk-top-interface-screen-view?ufid=%s" % (ADIT_SERVER, key))
+
 
 def upload_files(flist):
     """ Uploads all of the files to ADIT. flist should be a dictionary
@@ -97,10 +118,6 @@ def upload_files(flist):
     dictionary file_types. """
 
     pass
-
-#ssh adit@adit-alpha
-#/home/adit/adit/www/adit/sessions/bmrb-adit
-#/adit/www/adit/scratch/upload/
 
 # Start the ADIT session
 def start_session():
@@ -120,12 +137,15 @@ def start_session():
 
         # Activate the session (don't know why this is needed...)
         logging.info("Activating session.")
-        request = session.get(get_activate_url(request.text))
+        session.get(get_activate_url(request.text))
 
-        a = upload_file(['upload_category_33', "/tmp/test"], session, sid)
+        upload_file(['Image', "/tmp/test2"], session, sid, image=True)
+        upload_file(['upload_category_29', "/tmp/test"], session, sid)
+        upload_file(['upload_category_32', "/tmp/test_re"], session, sid)
 
-        return sid
+        print(sid)
 
 
 if __name__ == "__main__":
     start_session()
+
