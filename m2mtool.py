@@ -275,10 +275,12 @@ def main(args):
     files = filter(lambda x:os.path.isfile(x),files)
 
     with NamedTemporaryFile() as star_file:
-        star_file.write(str(build_entry(software)).encode())
+        entry = build_entry(software)
+        email = entry.get_tag('_Contact_person.Email_address')[0]
+        star_file.write(str(entry).encode())
         star_file.flush()
 
-        with adit.ADITSession(star_file.name) as adit_session:
+        with adit.ADITSession(star_file.name, email) as adit_session:
             # Upload data files
 
             for ef in files:
