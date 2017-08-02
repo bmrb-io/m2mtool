@@ -35,8 +35,11 @@ import re
 import pwd
 import sys
 import json
+import random
 import logging
 from tempfile import NamedTemporaryFile
+
+import adit
 
 # pip/repo installed packages
 try:
@@ -60,6 +63,7 @@ configuration = json.loads(open(os.path.join(_DIR, "config.json"), "r").read())
 
 # Set up logging
 logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
 
 # Set up pynmrstar
 pynmrstar.SKIP_EMPTY_LOOPS = True
@@ -266,10 +270,21 @@ def main(args):
 
     software = filter_software(get_software(), args[1])
 
+    files = [os.path.join(args[1], x) for x in os.listdir(args[1])]
+    files = filter(lambda x:os.path.isfile(x),files)
+
     with NamedTemporaryFile() as star_file:
         star_file.write(str(build_entry(software)).encode())
         star_file.flush()
-        os.system("gedit %s" % star_file.name)
+
+        with adit.ADITSession(star_file.name) as adit_session:
+            # Upload data files
+
+            for ef in files:
+                adit_session.upload_file(random.choice(list(adit.ADITSession.file_types.keys())), ef)
+
+            print(adit_session.sid)
+            #os.system("gedit %s" % star_file.name)
 
     return 0
 
