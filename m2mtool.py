@@ -187,8 +187,8 @@ def build_entry(software_packages):
     # Add NMRbox
     software_packages.append({'slug': 'NMRbox', 'version': get_vm_version(),
                               'synopsis': 'NMRbox is a cloud-based virtual machine loaded with NMR software.',
-                              'first_name': 'Maciejewski, M.W., Schuyler, A.D., Gryk, M.R., Moraru, I.I., Romero, P.R., Ulrich, E.L., Eghbalnia, H.R., Livny, M., Delaglio, F., and Hoch, J.C.',
-                              'last_name': None, 'email': 'support@nmrbox.org'})
+                              'first_name': 'NMRbox Team', 'last_name': None,
+                              'email': 'support@nmrbox.org'})
 
     package_id = 1
     for package in software_packages:
@@ -215,7 +215,7 @@ def build_entry(software_packages):
             name = fname
         else:
             name = fname + " " + lname
-        vendor = [name, None, package["email"], "NEED_ACC_NUM", package_id]
+        vendor = [name, None, package["email"], None, package_id]
         if vendor[0] or vendor[1] or vendor[2]:
             frame['_Vendor'].add_data(vendor)
 
@@ -288,23 +288,19 @@ def main(args):
     files = filter(lambda x:os.path.isfile(x),files)
 
     with NamedTemporaryFile() as star_file:
-        entry = build_entry(software)
-        email = entry.get_tag('_Contact_person.Email_address')[0]
-        star_file.write(str(entry).encode())
+        star_file.write(str(build_entry(software)).encode())
         star_file.flush()
 
-        os.system("gedit %s" % star_file.name)
-        sys.exit(0)
-        with adit.ADITSession(star_file.name, email) as adit_session:
+        with adit.ADITSession(star_file.name) as adit_session:
             # Upload data files
 
             for ef in files:
                 adit_session.upload_file(random.choice(list(adit.ADITSession.file_types.keys())), ef)
 
             session_url = adit_session.get_session_url()
-            #os.system("gedit %s" % star_file.name)
 
         webbrowser.open_new_tab(adit_session.get_session_url())
+        os.system("gedit %s" % star_file.name)
 
     return 0
 

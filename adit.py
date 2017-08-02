@@ -28,7 +28,6 @@ class ADITSession():
 
     sid = None
     session = None
-    email = None
     nmrstar_file = None
 
     server = 'http://144.92.167.205'
@@ -75,9 +74,8 @@ class ADITSession():
     "Image": "An image"
 }
 
-    def __init__(self, nmrstar_file, user_email, server=None):
+    def __init__(self, nmrstar_file, server=None):
         self.nmrstar_file = nmrstar_file
-        self.email = user_email
         if server:
             self.server = server
 
