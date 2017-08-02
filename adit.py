@@ -164,7 +164,7 @@ class ADITSession():
     def get_session_url(self):
         """ Returns the session URL."""
 
-        return "%s/cgi-bin/bmrb-adit/mk-top-interface-screen-view?ufid=%s&blockid=NEED_ACC_NUM&context=deposit-en&dbname=&email=bmrbhelp@bmrb.wisc.edu&archdir=bmrb&expmeth=NMR&moltype=" % (self.server, self.sid)
+        return "%s/cgi-bin/bmrb-adit/mk-top-interface-screen-view?ufid=%s" % (self.server, self.sid)
 
     @staticmethod
     def get_session_id(text):

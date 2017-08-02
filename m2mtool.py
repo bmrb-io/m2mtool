@@ -37,6 +37,7 @@ import sys
 import json
 import random
 import logging
+import webbrowser
 from tempfile import NamedTemporaryFile
 
 import adit
@@ -283,8 +284,10 @@ def main(args):
             for ef in files:
                 adit_session.upload_file(random.choice(list(adit.ADITSession.file_types.keys())), ef)
 
-            print(adit_session.sid)
+            session_url = adit_session.get_session_url()
             #os.system("gedit %s" % star_file.name)
+
+        webbrowser.open_new_tab(adit_session.get_session_url())
 
     return 0
 
