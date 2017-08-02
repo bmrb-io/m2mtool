@@ -232,6 +232,8 @@ def get_username():
 def get_user_activity(directory):
     """ Prints a summary of the users activity."""
 
+    logging.info("Fetching user command activity.")
+
     dirmod = get_modified_time(directory)
 
     cur = get_postgres_connection()[1]
@@ -282,6 +284,15 @@ def filter_software(all_packages, path):
 # Demo what we can do
 def main(args):
 
+    # If the session exists, re-open it
+    session_file = os.path.join(args[1], '.aditnmr_session')
+    if os.path.isfile(session_file):
+        logging.info("Loading existing session...")
+        adit_session = adit.ADITSession(None, open(session_file, "r").read())
+        webbrowser.open_new_tab(adit_session.get_session_url())
+        sys.exit(0)
+
+    # Fetch the software list
     software = filter_software(get_software(), args[1])
 
     files = [os.path.join(args[1], x) for x in os.listdir(args[1])]
@@ -297,6 +308,7 @@ def main(args):
             for ef in files:
                 adit_session.upload_file(random.choice(list(adit.ADITSession.file_types.keys())), ef)
 
+            open(session_file, "w").write(str(adit_session.sid))
             session_url = adit_session.get_session_url()
 
         webbrowser.open_new_tab(adit_session.get_session_url())

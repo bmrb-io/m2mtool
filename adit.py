@@ -74,8 +74,9 @@ class ADITSession():
     "Image": "An image"
 }
 
-    def __init__(self, nmrstar_file, server=None):
+    def __init__(self, nmrstar_file, sid=None, server=None):
         self.nmrstar_file = nmrstar_file
+        self.sid = sid
         if server:
             self.server = server
 
@@ -83,6 +84,9 @@ class ADITSession():
         """ Start the session.
 
         Creates a python requests Session() and starts an ADIT-NMR session."""
+
+        if self.sid != None:
+            return self
 
         self.session = requests.Session()
 
