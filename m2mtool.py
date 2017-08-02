@@ -163,7 +163,15 @@ SELECT institution_type as user_type, ins.name AS institution,p.*
     entry.add_loop(contact_person)
     entry.add_loop(entry_author)
 
-    return entry
+    # Create the citation saveframe
+    citation = pynmrstar.Saveframe.from_scratch("citations", "_Citation")
+    citation.add_tags([["Sf_category", "citations"], ["Sf_framecode", "citations"]])
+    citation_author = pynmrstar.Loop.from_scratch("_Citation_author")
+    citation_author.add_column(["Ordinal", "Given_name", "Family_name"])
+    citation_author.add_data([1, person['first_name'], person['last_name']])
+    citation.add_loop(citation_author)
+
+    return [entry, citation]
 
 def build_entry(software_packages):
     """ Builds a NMR-STAR entry. Pass a list of
@@ -171,10 +179,16 @@ def build_entry(software_packages):
 
     logging.info("Building software saveframe.")
 
-    entry = pynmrstar.Entry.from_scratch('TBD')
+    entry = pynmrstar.Entry.from_scratch('NEED_ACC_NUM')
 
-    #dep_files = pynmrstar.Saveframe.from_template("deposited_data_files")
-    entry.add_saveframe(get_entry_saveframe())
+    for frame in get_entry_saveframe():
+        entry.add_saveframe(frame)
+
+    # Add NMRbox
+    software_packages.append({'slug': 'NMRbox', 'version': get_vm_version(),
+                              'synopsis': 'NMRbox is a cloud-based virtual machine loaded with NMR software.',
+                              'first_name': 'Maciejewski, M.W., Schuyler, A.D., Gryk, M.R., Moraru, I.I., Romero, P.R., Ulrich, E.L., Eghbalnia, H.R., Livny, M., Delaglio, F., and Hoch, J.C.',
+                              'last_name': None, 'email': 'support@nmrbox.org'})
 
     package_id = 1
     for package in software_packages:
@@ -186,7 +200,6 @@ def build_entry(software_packages):
             continue
 
         frame.add_tag("ID", package_id, update=True)
-        frame.add_tag("Entry_ID", 'TBD', update=True)
         frame.add_tag("Name", package['slug'], update=True)
         frame.add_tag("Version", package['version'], update=True)
         frame.add_tag("Details", package['synopsis'], update=True)
@@ -202,7 +215,7 @@ def build_entry(software_packages):
             name = fname
         else:
             name = fname + " " + lname
-        vendor = [name, None, package["email"], "TBD", package_id]
+        vendor = [name, None, package["email"], "NEED_ACC_NUM", package_id]
         if vendor[0] or vendor[1] or vendor[2]:
             frame['_Vendor'].add_data(vendor)
 
@@ -280,6 +293,8 @@ def main(args):
         star_file.write(str(entry).encode())
         star_file.flush()
 
+        os.system("gedit %s" % star_file.name)
+        sys.exit(0)
         with adit.ADITSession(star_file.name, email) as adit_session:
             # Upload data files
 
