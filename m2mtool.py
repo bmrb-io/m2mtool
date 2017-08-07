@@ -31,7 +31,6 @@ from __future__ import print_function
 
 # Standard lib packages
 import os
-import re
 import pwd
 import sys
 import json
@@ -39,6 +38,7 @@ import random
 import logging
 import webbrowser
 from tempfile import NamedTemporaryFile
+import xml.etree.cElementTree as ET
 
 import adit
 
@@ -244,16 +244,19 @@ SELECT runtime,cwd,filename,cmd FROM snoopy
 
     return cur.fetchall()
 
+
 def get_vm_version():
     """ Returns the version of the VM that is running."""
 
-    try:
-        with open("/etc/nmrbox_version", "r") as nmr_version:
-            matches = re.search("Release([0-9\.]+)", nmr_version.readline())
-            if matches and len(matches.groups()) > 0:
-                return matches.groups(0)[0]
-    except IOError:
-        pass
+    # Remove once the DB is updated
+    return "2"
+
+    # Get the NMRBox version from the xml
+    with open("/etc/nmrbox_version.xml", "r") as nmr_version_file:
+        root = ET.parse(nmr_version_file).getroot()
+        version = next(root.getiterator("version")).text
+
+        return version[:version.index("-")]
 
     # Assume the latest version in the absense of the necessary info
     return configuration['lastest_vm_version']
