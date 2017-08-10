@@ -294,7 +294,8 @@ def main(args):
     session_file = os.path.join(args[1], '.aditnmr_session')
     if os.path.isfile(session_file):
         logging.info("Loading existing session...")
-        adit_session = adit.ADITSession(None, open(session_file, "r").read())
+        session_info = json.loads(open(session_file, "r").read())
+        adit_session = adit.ADITSession(None, session_info['sid'])
         webbrowser.open_new_tab(adit_session.get_session_url())
         sys.exit(0)
 
@@ -308,23 +309,26 @@ def main(args):
         star_file.write(str(build_entry(software)).encode())
         star_file.flush()
 
-        os.system("gedit %s" % star_file.name)
-        sys.exit(0)
-
         with adit.ADITSession(star_file.name) as adit_session:
             # Upload data files
 
             for ef in files:
                 adit_session.upload_file(random.choice(list(adit.ADITSession.file_types.keys())), ef)
 
-            open(session_file, "w").write(str(adit_session.sid))
-            session_url = adit_session.get_session_url()
         # Upload to API
         star_file.seek(0)
         api_id = requests.post("%s/entry/" % configuration['bmrb_api'],
                                data=star_file).json()["entry_id"]
 
+        with open(session_file, "w") as session_log:
+            session_info = {"sid": adit_session.sid, "api_id": api_id,
+                            "ctime": time.time()}
+            session_log.write(json.dumps(session_info))
+
+        # Open the session
         webbrowser.open_new_tab(adit_session.get_session_url())
+        time.sleep(3)
+        webbrowser.open_new_tab("%s?entry=%s" % (configuration['starviewer'], api_id))
 
     return 0
 
