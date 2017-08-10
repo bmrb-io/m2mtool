@@ -34,13 +34,17 @@ import os
 import pwd
 import sys
 import json
+import time
 import random
 import logging
+import requests
 import webbrowser
 from tempfile import NamedTemporaryFile
 import xml.etree.cElementTree as ET
+from html import escape as html_escape
 
 import adit
+import zenity
 
 # pip/repo installed packages
 try:
@@ -330,5 +334,6 @@ if __name__ == '__main__':
     try:
         main(sys.argv)
     except Exception as e:
-        os.system("zenity --info --text '%s'" % str(e))
+        logging.critical(str(e))
+        zenity.error(text=html_escape(str(e)))
         sys.exit(1)
