@@ -58,9 +58,8 @@ from PyNMRSTAR import bmrb as pynmrstar
 # Module initialization #
 #########################
 
-# Load the configuration file
-_DIR = os.path.dirname(os.path.realpath(__file__))
-configuration = json.loads(open(os.path.join(_DIR, "config.json"), "r").read())
+# Load the configuration
+from configuration import configuration
 
 # Set up logging
 logging.basicConfig()
@@ -305,6 +304,9 @@ def main(args):
         star_file.write(str(build_entry(software)).encode())
         star_file.flush()
 
+        os.system("gedit %s" % star_file.name)
+        sys.exit(0)
+
         with adit.ADITSession(star_file.name) as adit_session:
             # Upload data files
 
@@ -313,12 +315,20 @@ def main(args):
 
             open(session_file, "w").write(str(adit_session.sid))
             session_url = adit_session.get_session_url()
+        # Upload to API
+        star_file.seek(0)
+        api_id = requests.post("%s/entry/" % configuration['bmrb_api'],
+                               data=star_file).json()["entry_id"]
 
         webbrowser.open_new_tab(adit_session.get_session_url())
-        os.system("gedit %s" % star_file.name)
 
     return 0
 
 # Run the code in this module
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+
+    try:
+        main(sys.argv)
+    except Exception as e:
+        os.system("zenity --info --text '%s'" % str(e))
+        sys.exit(1)

@@ -20,6 +20,8 @@ import requests
 #/home/adit/adit/www/adit/sessions/bmrb-adit
 #/adit/www/adit/scratch/upload/
 
+from configuration import configuration
+
 # Set up logging
 logging.basicConfig()
 
@@ -30,7 +32,6 @@ class ADITSession():
     session = None
     nmrstar_file = None
 
-    server = 'http://144.92.167.205'
     file_types = {
     "upload_category_1": "Assigned NMR chemical shifts",
     "upload_category_2": "Scalar coupling constants",
@@ -74,11 +75,9 @@ class ADITSession():
     "Image": "An image"
 }
 
-    def __init__(self, nmrstar_file, sid=None, server=None):
+    def __init__(self, nmrstar_file, sid=None):
         self.nmrstar_file = nmrstar_file
         self.sid = sid
-        if server:
-            self.server = server
 
     def __enter__(self):
         """ Start the session.
@@ -94,7 +93,7 @@ class ADITSession():
         values = {'moltype':'prot', 'expmeth': 'nmr', 'context': 'deposit',
                   'applname': 'adit', 'email': 'bmrbhelp@bmrb.wisc.edu',
                   'return_url': '/'}
-        r = self.session.post("%s/cgi-bin/bmrb-adit/adit-session-driver" % self.server,
+        r = self.session.post("%s/cgi-bin/bmrb-adit/adit-session-driver" % configuration['adit_server'],
                               data=values)
 
         # Find the session ID
@@ -121,7 +120,7 @@ class ADITSession():
                   'email': 'bmrbhelp@bmrb.wisc.edu', 'archdir': 'bmrb', 'expmeth': 'NMR',
                   'moltype': '', 'form_has_been_submitted': 1,
                   'upload_submit': 'CONTINUE DEPOSITION'}
-        r = self.session.post("%s/cgi-bin/bmrb-adit/upload-req-shifts" % self.server,
+        r = self.session.post("%s/cgi-bin/bmrb-adit/upload-req-shifts" % configuration['adit_server'],
                               data=values, files=[('upload_name',StringIO(""))])
         r.raise_for_status()
 
@@ -133,7 +132,7 @@ class ADITSession():
 
         the_file should be a (filename, type) tuple. """
 
-        url = '%s/cgi-bin/bmrb-adit/upload-req-shifts' % self.server
+        url = '%s/cgi-bin/bmrb-adit/upload-req-shifts' % configuration['adit_server']
         files = {'upload_fname': open(file_name, 'rb')}
         values = {'ufid': self.sid, 'context': 'deposit-en', 'dbname': '',
                   'email': 'bmrbhelp@bmrb.wisc.edu', 'archdir': 'bmrb', 'expmeth': 'NMR',
@@ -154,7 +153,7 @@ class ADITSession():
     def get_session_url(self):
         """ Returns the session URL."""
 
-        return "%s/cgi-bin/bmrb-adit/mk-top-interface-screen-view?ufid=%s" % (self.server, self.sid)
+        return "%s/cgi-bin/bmrb-adit/mk-top-interface-screen-view?ufid=%s" % (configuration['adit_server'], self.sid)
 
     @staticmethod
     def _get_session_id(text):
