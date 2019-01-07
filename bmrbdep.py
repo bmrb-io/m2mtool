@@ -79,7 +79,7 @@ class BMRBDepSession:
         logging.info("Creating session.")
         r = self.session.post("%s/deposition/new" % configuration['bmrb_api'],
                               data={'email': self.user_email},
-                              files={'nmrstar_file': self.nmrstar_file})
+                              files={'nmrstar_file': ('m2mtool_generated.str', self.nmrstar_file)})
         # If there was an error closing the session raise it
         r.raise_for_status()
 
@@ -100,7 +100,7 @@ class BMRBDepSession:
 
         the_file should be a (filename, type) tuple. """
 
-        url = '%s/%s/file' % (configuration['bmrb_api'], self.sid)
+        url = '%s/deposition/%s/file' % (configuration['bmrb_api'], self.sid)
         files = {'file': open(file_name, 'rb')}
 
         logging.info("Sending file '%s'.", file_name)

@@ -32,7 +32,6 @@ import pwd
 import sys
 import json
 import time
-import random
 import logging
 import webbrowser
 from tempfile import NamedTemporaryFile
@@ -41,10 +40,15 @@ from html import escape as html_escape
 
 import bmrbdep
 
-import requests
 import psycopg2
 from psycopg2.extras import DictCursor
-import zenipy
+
+try:
+    from zenipy import error as display_error
+except ImportError:
+    def display_error(text):
+        print('An error occurred: %s' % text)
+
 import pynmrstar
 
 #########################
@@ -143,10 +147,10 @@ SELECT institution_type as user_type, ins.name AS institution,p.*
 
     # Create the contact person loop
     contact_person = pynmrstar.Loop.from_scratch("_Contact_person")
-    contact_person.add_column(["ID", "Email_address", "Given_name", "Family_name",
-                               "Department_and_institution", "Address_1",
-                               "Address_2", "Address_3", "City", "State_province",
-                               "Country", "Postal_code", "Role", "Organization_type"])
+    contact_person.add_tag(["ID", "Email_address", "Given_name", "Family_name",
+                            "Department_and_institution", "Address_1",
+                            "Address_2", "Address_3", "City", "State_province",
+                            "Country", "Postal_code", "Role", "Organization_type"])
     person = dict(registry_dict_cur.fetchone())
     for x in person.keys():
         person[x] = "." if person[x] == "" else person[x]
@@ -160,7 +164,7 @@ SELECT institution_type as user_type, ins.name AS institution,p.*
 
     # Create the entry_author loop
     entry_author = pynmrstar.Loop.from_scratch("_Entry_author")
-    entry_author.add_column(["Ordinal", "Given_name", "Family_name"])
+    entry_author.add_tag(["Ordinal", "Given_name", "Family_name"])
     entry_author.add_data([1, person['first_name'], person['last_name']])
 
     # Add the children loops
@@ -171,7 +175,7 @@ SELECT institution_type as user_type, ins.name AS institution,p.*
     citation = pynmrstar.Saveframe.from_scratch("citations", "_Citation")
     citation.add_tags([["Sf_category", "citations"], ["Sf_framecode", "citations"]])
     citation_author = pynmrstar.Loop.from_scratch("_Citation_author")
-    citation_author.add_column(["Ordinal", "Given_name", "Family_name"])
+    citation_author.add_tag(["Ordinal", "Given_name", "Family_name"])
     citation_author.add_data([1, person['first_name'], person['last_name']])
     citation.add_loop(citation_author)
 
@@ -313,6 +317,7 @@ def main(args):
     with NamedTemporaryFile() as star_file:
         star_file.write(str(build_entry(software)).encode())
         star_file.flush()
+        star_file.seek(0)
 
         with bmrbdep.BMRBDepSession(star_file, get_user_email()) as bmrbdep_session:
             # Upload data files
@@ -325,7 +330,7 @@ def main(args):
             session_log.write(json.dumps(session_info))
 
         # Open the session
-        webbrowser.open_new_tab(bmrbdep_session.get_session_url())
+        webbrowser.open_new_tab(bmrbdep_session.session_url)
         time.sleep(3)
 
     return 0
@@ -338,5 +343,5 @@ if __name__ == '__main__':
         main(sys.argv)
     except Exception as e:
         logging.critical(str(e))
-        zenipy.error(text=html_escape(str(e)))
+        display_error(text=html_escape(str(e)))
         sys.exit(1)
