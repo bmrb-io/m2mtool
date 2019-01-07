@@ -122,10 +122,8 @@ SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.ema
 def get_user_email():
     registry_dict_cur = get_postgres_connection(database="registry")[1]
 
-    registry_dict_cur.execute('''
-    SELECT email
-      FROM persons;
-      WHERE nmrbox_acct=%s''', [get_username()])
+    registry_dict_cur.execute('''SELECT email FROM persons WHERE nmrbox_acct=%s''',
+                              [get_username()])
     return registry_dict_cur.fetchone()[0]
 
 
