@@ -111,6 +111,6 @@ class BMRBDepSession:
     def session_url(self):
         """ Returns the session URL."""
 
-        return "%s/%s/saveframe/deposited_data_files/category" % \
+        return "%s/entry/%s/saveframe/deposited_data_files/category" % \
                (configuration['bmrbdep_url'], self.sid)
 
