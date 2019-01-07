@@ -39,7 +39,7 @@ from tempfile import NamedTemporaryFile
 import xml.etree.cElementTree as ET
 from html import escape as html_escape
 
-import adit
+import bmrbdep
 
 import requests
 import psycopg2
@@ -60,6 +60,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 # Set up pynmrstar
 pynmrstar.SKIP_EMPTY_LOOPS = True
+
 
 ###########
 # Methods #
@@ -118,6 +119,16 @@ SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.ema
     return res
 
 
+def get_user_email():
+    registry_dict_cur = get_postgres_connection(database="registry")[1]
+
+    registry_dict_cur.execute('''
+    SELECT email
+      FROM persons;
+      WHERE nmrbox_acct=%s''', [get_username()])
+    return registry_dict_cur.fetchone()[0]
+
+
 def get_entry_saveframe():
     """ Returns information about the NMRbox user. """
 
@@ -134,7 +145,7 @@ SELECT institution_type as user_type, ins.name AS institution,p.*
 
     # Create the contact person loop
     contact_person = pynmrstar.Loop.from_scratch("_Contact_person")
-    contact_person.add_column(["ID","Email_address", "Given_name", "Family_name",
+    contact_person.add_column(["ID", "Email_address", "Given_name", "Family_name",
                                "Department_and_institution", "Address_1",
                                "Address_2", "Address_3", "City", "State_province",
                                "Country", "Postal_code", "Role", "Organization_type"])
@@ -201,24 +212,23 @@ def build_entry(software_packages):
         frame.add_tag("Details", package['synopsis'], update=True)
 
         # Add to the vendor loop if we have useful data
-        fname = package["first_name"]
-        lname = package["last_name"]
-        if not fname and not lname:
+        first_name = package["first_name"]
+        last_name = package["last_name"]
+        if not first_name and not last_name:
             name = None
-        elif not fname:
-            name = lname
-        elif not lname:
-            name = fname
+        elif not first_name:
+            name = last_name
+        elif not last_name:
+            name = first_name
         else:
-            name = fname + " " + lname
+            name = first_name + " " + last_name
         vendor = [name, None, package["email"], None, package_id]
         if vendor[0] or vendor[1] or vendor[2]:
             frame['_Vendor'].add_data(vendor)
 
         package_id += 1
 
-
-    return(entry)
+    return entry
 
 
 def get_username():
@@ -287,46 +297,38 @@ def filter_software(all_packages, path):
 
 # Demo what we can do
 def main(args):
-
     # If the session exists, re-open it
     session_file = os.path.join(args[1], '.aditnmr_session')
     if os.path.isfile(session_file):
         logging.info("Loading existing session...")
         session_info = json.loads(open(session_file, "r").read())
-        adit_session = adit.ADITSession(None, session_info['sid'])
-        webbrowser.open_new_tab(adit_session.get_session_url())
+        bmrbdep_session = bmrbdep.BMRBDepSession(None, None, session_info['sid'])
+        webbrowser.open_new_tab(bmrbdep_session.session_url)
         sys.exit(0)
 
     # Fetch the software list
     software = filter_software(get_software(), args[1])
 
     files = [os.path.join(args[1], x) for x in os.listdir(args[1])]
-    files = filter(lambda x:os.path.isfile(x),files)
+    files = filter(lambda x: os.path.isfile(x), files)
 
     with NamedTemporaryFile() as star_file:
         star_file.write(str(build_entry(software)).encode())
         star_file.flush()
 
-        with adit.ADITSession(star_file.name) as adit_session:
+        with bmrbdep.BMRBDepSession(star_file, get_user_email()) as bmrbdep_session:
             # Upload data files
 
             for ef in files:
-                adit_session.upload_file(random.choice(list(adit.ADITSession.file_types.keys())), ef)
-
-        # Upload to API
-        star_file.seek(0)
-        api_id = requests.post("%s/entry/" % configuration['bmrb_api'],
-                               data=star_file).json()["entry_id"]
+                bmrbdep_session.upload_file(ef)
 
         with open(session_file, "w") as session_log:
-            session_info = {"sid": adit_session.sid, "api_id": api_id,
-                            "ctime": time.time()}
+            session_info = {"sid": bmrbdep_session.sid, "ctime": time.time()}
             session_log.write(json.dumps(session_info))
 
         # Open the session
-        webbrowser.open_new_tab(adit_session.get_session_url())
+        webbrowser.open_new_tab(bmrbdep_session.get_session_url())
         time.sleep(3)
-        webbrowser.open_new_tab("%s?entry=%s" % (configuration['starviewer'], api_id))
 
     return 0
 
