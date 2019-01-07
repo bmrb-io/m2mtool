@@ -9,4 +9,5 @@ if [[ ! -d "${DIR}/env" ]]; then
   source ${DIR}/env/bin/activate
   pip3 install -r requirements.txt > /dev/null
 fi
+source ${DIR}/env/bin/activate
 ${DIR}/m2mtool.py "$@"
