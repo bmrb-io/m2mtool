@@ -44,7 +44,7 @@ import adit
 import requests
 import psycopg2
 from psycopg2.extras import DictCursor
-import pythonzenity
+import zenipy
 import pynmrstar
 
 #########################
@@ -338,5 +338,5 @@ if __name__ == '__main__':
         main(sys.argv)
     except Exception as e:
         logging.critical(str(e))
-        pythonzenity.error(text=html_escape(str(e)))
+        zenipy.error(text=html_escape(str(e)))
         sys.exit(1)
