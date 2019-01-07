@@ -298,7 +298,7 @@ def filter_software(all_packages, path):
 # Demo what we can do
 def main(args):
     # If the session exists, re-open it
-    session_file = os.path.join(args[1], '.aditnmr_session')
+    session_file = os.path.join(args[1], '.bmrbdep_session')
     if os.path.isfile(session_file):
         logging.info("Loading existing session...")
         session_info = json.loads(open(session_file, "r").read())
