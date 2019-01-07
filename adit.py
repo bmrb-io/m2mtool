@@ -1,18 +1,8 @@
 #!/usr/bin/env python3
 
-from __future__ import print_function
-
 import re
-import sys
 import logging
-
-PY3 = (sys.version_info[0] == 3)
-if PY3:
-    from io import StringIO
-    from html.parser import HTMLParser
-else:
-    from HTMLParser import HTMLParser
-    from cStringIO import StringIO
+from io import StringIO
 
 import requests
 
@@ -24,6 +14,7 @@ from configuration import configuration
 
 # Set up logging
 logging.basicConfig()
+
 
 class ADITSession():
     """ A class to manage the session. """

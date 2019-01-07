@@ -26,9 +26,6 @@
 # Imports #
 ###########
 
-# Allow running in python2
-from __future__ import print_function
-
 # Standard lib packages
 import os
 import pwd
@@ -37,26 +34,18 @@ import json
 import time
 import random
 import logging
-import requests
 import webbrowser
 from tempfile import NamedTemporaryFile
 import xml.etree.cElementTree as ET
 from html import escape as html_escape
 
 import adit
-import zenity
 
-# pip/repo installed packages
-try:
-    import psycopg2
-    from psycopg2.extras import DictCursor
-    from psycopg2 import ProgrammingError
-except ImportError:
-    logging.critical("You must install psycopg2 to run this module.")
-    sys.exit(1)
-
-# Local packages
-from PyNMRSTAR import bmrb as pynmrstar
+import requests
+import psycopg2
+from psycopg2.extras import DictCursor
+import pythonzenity
+import pynmrstar
 
 #########################
 # Module initialization #
@@ -75,6 +64,7 @@ pynmrstar.SKIP_EMPTY_LOOPS = True
 ###########
 # Methods #
 ###########
+
 
 def get_postgres_connection(user=configuration['psql']['user'],
                             host=configuration['psql']['host'],
@@ -95,6 +85,7 @@ def get_postgres_connection(user=configuration['psql']['user'],
     cur = conn.cursor()
 
     return conn, cur
+
 
 def get_software(vm_id=None):
     """ Returns a dictionary of the known software packages."""
@@ -125,6 +116,7 @@ SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.ema
         res[package['software_path']] = dict(package)
 
     return res
+
 
 def get_entry_saveframe():
     """ Returns information about the NMRbox user. """
@@ -175,6 +167,7 @@ SELECT institution_type as user_type, ins.name AS institution,p.*
     citation.add_loop(citation_author)
 
     return [entry, citation]
+
 
 def build_entry(software_packages):
     """ Builds a NMR-STAR entry. Pass a list of
@@ -227,10 +220,12 @@ def build_entry(software_packages):
 
     return(entry)
 
+
 def get_username():
     """ Return the username of the current user."""
 
     return pwd.getpwuid(os.getuid()).pw_name
+
 
 def get_user_activity(directory):
     """ Prints a summary of the users activity."""
@@ -264,10 +259,12 @@ def get_vm_version():
     # Assume the latest version in the absense of the necessary info
     return configuration['lastest_vm_version']
 
+
 def get_modified_time(path):
     """ Returns the last modified time of the file/folder."""
 
     return os.path.getmtime(path)
+
 
 def filter_software(all_packages, path):
     """ Returns the software packages used by this user in the selected
@@ -286,6 +283,7 @@ def filter_software(all_packages, path):
                 activities_dict[sw_path] = True
 
     return activities
+
 
 # Demo what we can do
 def main(args):
@@ -332,6 +330,7 @@ def main(args):
 
     return 0
 
+
 # Run the code in this module
 if __name__ == '__main__':
 
@@ -339,5 +338,5 @@ if __name__ == '__main__':
         main(sys.argv)
     except Exception as e:
         logging.critical(str(e))
-        zenity.error(text=html_escape(str(e)))
+        pythonzenity.error(text=html_escape(str(e)))
         sys.exit(1)

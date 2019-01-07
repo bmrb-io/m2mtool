@@ -1,6 +1,0 @@
-[submodule "PyNMRSTAR"]
-	path = PyNMRSTAR
-	url = https://github.com/uwbmrb/PyNMRSTAR.git
-[submodule "python-zenity"]
-	path = python-zenity
-	url = https://github.com/poulp/python-zenity.git
