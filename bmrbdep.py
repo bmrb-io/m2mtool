@@ -116,5 +116,5 @@ class BMRBDepSession:
     @property
     def session_url(self):
         """ Returns the session URL."""
-        return f"{configuration['bmrbdep_root_url']}/entry/{self.sid}"
+        return f"{configuration['bmrbdep_root_url']}/entry/load/{self.sid}"
 
