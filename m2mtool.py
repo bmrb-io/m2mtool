@@ -22,26 +22,21 @@
 #
 #
 
-###########
-# Imports #
-###########
-
-# Standard lib packages
+import json
+import logging
 import os
 import pwd
 import sys
-import json
 import time
-import logging
 import webbrowser
-from tempfile import NamedTemporaryFile
 import xml.etree.cElementTree as ET
 from html import escape as html_escape
-
-import bmrbdep
+from tempfile import NamedTemporaryFile
 
 import psycopg2
 from psycopg2.extras import DictCursor
+
+import bmrbdep
 
 try:
     from zenipy import error as display_error
@@ -61,10 +56,6 @@ from configuration import configuration
 # Set up logging
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
-
-# Set up pynmrstar
-pynmrstar.SKIP_EMPTY_LOOPS = True
-
 
 ###########
 # Methods #
@@ -194,9 +185,11 @@ def build_entry(software_packages):
         entry.add_saveframe(frame)
 
     # Add NMRbox
-    software_packages.append({'slug': 'NMRbox', 'version': get_vm_version(),
+    software_packages.append({'slug': 'NMRbox',
+                              'version': get_vm_version(),
                               'synopsis': 'NMRbox is a cloud-based virtual machine loaded with NMR software.',
-                              'first_name': 'NMRbox Team', 'last_name': None,
+                              'first_name': 'NMRbox Team',
+                              'last_name': None,
                               'email': 'support@nmrbox.org'})
 
     package_id = 1
@@ -264,12 +257,12 @@ def get_vm_version():
     # Get the NMRBox version from the xml
     with open("/etc/nmrbox_version.xml", "r") as nmr_version_file:
         root = ET.parse(nmr_version_file).getroot()
-        version = next(root.getiterator("version")).text
+        version = next(root.iter("version")).text
 
         return version[:version.index("-")]
 
-    # Assume the latest version in the absense of the necessary info
-    return configuration['lastest_vm_version']
+    # Assume the latest version in the absence of the necessary info
+    return configuration['latest_vm_version']
 
 
 def get_modified_time(path):

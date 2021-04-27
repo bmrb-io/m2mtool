@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import logging
+
 import requests
+
 from configuration import configuration
 
 # Set up logging
@@ -77,7 +79,7 @@ class BMRBDepSession:
             return
 
         logging.info("Creating session.")
-        r = self.session.post("%s/deposition/new" % configuration['bmrb_api'],
+        r = self.session.post(f"{configuration['bmrbdep_root_url']}/deposition/new",
                               data={'email': self.user_email},
                               files={'nmrstar_file': ('m2mtool_generated.str', self.nmrstar_file)})
         # If there was an error closing the session raise it
@@ -100,7 +102,7 @@ class BMRBDepSession:
 
         the_file should be a (filename, type) tuple. """
 
-        url = '%s/deposition/%s/file' % (configuration['bmrb_api'], self.sid)
+        url = f"{configuration['bmrbdep_root_url']}/deposition/{self.sid}/file"
         files = {'file': open(file_name, 'rb')}
 
         logging.info("Sending file '%s'.", file_name)
@@ -110,7 +112,5 @@ class BMRBDepSession:
     @property
     def session_url(self):
         """ Returns the session URL."""
-
-        return "%s/entry/%s/saveframe/deposited_data_files/category" % \
-               (configuration['bmrbdep_url'], self.sid)
+        return f"{configuration['bmrbdep_root_url']}/entry/{self.sid}/saveframe/deposited_data_files/category"
 
