@@ -39,10 +39,13 @@ from psycopg2.extras import DictCursor
 import bmrbdep
 
 try:
-    from zenipy import error as display_error
+    from zenipy import error as display_error, entry as get_input
 except ImportError:
     def display_error(text):
         print('An error occurred: %s' % text)
+
+    def get_input(prompt):
+        return input(prompt + ": ")
 
 import pynmrstar
 
@@ -293,7 +296,8 @@ def main(args):
     if os.path.isfile(session_file):
         logging.info("Loading existing session...")
         session_info = json.loads(open(session_file, "r").read())
-        bmrbdep_session = bmrbdep.BMRBDepSession(None, None, session_info['sid'])
+
+        bmrbdep_session = bmrbdep.BMRBDepSession(sid=session_info['sid'])
         webbrowser.open_new_tab(bmrbdep_session.session_url)
         sys.exit(0)
 
@@ -308,9 +312,12 @@ def main(args):
         star_file.flush()
         star_file.seek(0)
 
-        with bmrbdep.BMRBDepSession(star_file, get_user_email()) as bmrbdep_session:
+        nickname = get_input('Enter a nickname')
+        if not nickname:
+            display_error('Cancelling deposition creation: a nickname is necessary.')
+        with bmrbdep.BMRBDepSession(nmrstar_file=star_file, user_email=get_user_email(),
+                                    nickname=nickname) as bmrbdep_session:
             # Upload data files
-
             for ef in files:
                 bmrbdep_session.upload_file(ef)
 

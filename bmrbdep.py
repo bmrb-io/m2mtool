@@ -61,12 +61,15 @@ class BMRBDepSession:
         "Image": "An image"
     }
 
-    def __init__(self, nmrstar_file, user_email, sid=None):
+    def __init__(self, nmrstar_file=None, user_email=None, nickname=None, sid=None):
         if sid:
             self.sid = sid
         else:
+            if not nmrstar_file or not user_email or not nickname:
+                raise ValueError('Must provide either sid or nmrstar_file, user_email, and nickname.')
             self.nmrstar_file = nmrstar_file
             self.user_email = user_email
+            self.nickname = nickname
 
     def __enter__(self):
         """ Start the session.
@@ -80,7 +83,8 @@ class BMRBDepSession:
 
         logging.info("Creating session.")
         r = self.session.post(f"{configuration['bmrbdep_root_url']}/deposition/new",
-                              data={'email': self.user_email},
+                              data={'email': self.user_email,
+                                    'nickname': self.nickname},
                               files={'nmrstar_file': ('m2mtool_generated.str', self.nmrstar_file)})
         # If there was an error closing the session raise it
         r.raise_for_status()
