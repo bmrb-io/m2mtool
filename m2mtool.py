@@ -106,7 +106,6 @@ SELECT slug,url,software_path,version,synopsis
     res = {}
     for package in registry_dict_cur:
         res[package['software_path']] = dict(package)
-    logging.info(res)
 
     return res
 
