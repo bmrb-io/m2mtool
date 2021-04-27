@@ -84,7 +84,7 @@ class BMRBDepSession:
         logging.info("Creating session.")
         r = self.session.post(f"{configuration['bmrbdep_root_url']}/deposition/new",
                               data={'email': self.user_email,
-                                    'nickname': self.nickname},
+                                    'deposition_nickname': self.nickname},
                               files={'nmrstar_file': ('m2mtool_generated.str', self.nmrstar_file)})
         # If there was an error closing the session raise it
         r.raise_for_status()
