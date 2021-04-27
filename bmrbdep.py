@@ -104,7 +104,7 @@ class BMRBDepSession:
     def delete_file(self, file_name):
         """ Delete a file file from the session. """
 
-        url = f"{configuration['bmrbdep_root_url']}/deposition/{self.sid}/{file_name}"
+        url = f"{configuration['bmrbdep_root_url']}/deposition/{self.sid}/file/{file_name}"
         logging.info(f"Deleting file '{file_name}'.")
         r = self.session.delete(url)
         r.raise_for_status()
