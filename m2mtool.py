@@ -320,6 +320,8 @@ def main(args):
             # Upload data files
             for ef in files:
                 bmrbdep_session.upload_file(ef)
+            # Delete the metadata file from the "upload file" list
+            bmrbdep_session.delete_file('m2mtool_generated.str')
 
         with open(session_file, "w") as session_log:
             session_info = {"sid": bmrbdep_session.sid, "ctime": time.time()}

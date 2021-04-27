@@ -101,6 +101,14 @@ class BMRBDepSession:
         # End the HTTP session
         self.session.close()
 
+    def delete_file(self, file_name):
+        """ Delete a file file from the session. """
+
+        url = f"{configuration['bmrbdep_root_url']}/deposition/{self.sid}/file"
+        logging.info(f"Deleting file '{file_name}'.")
+        r = self.session.delete(url)
+        r.raise_for_status()
+
     def upload_file(self, file_name):
         """ Uploads a given file to the session.
 
