@@ -95,7 +95,7 @@ def get_software(vm_id=None):
     registry_dict_cur = get_postgres_connection(database="registry", dictionary_cursor=True)[1]
 
     registry_dict_cur.execute('''
-SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.email,pr.address1
+SELECT slug,url,software_path,version,synopsis
   FROM software as sw
   LEFT JOIN software_versions as sv
     ON sw.id = sv.software_id
