@@ -101,15 +101,12 @@ SELECT slug,url,software_path,version,synopsis,pr.first_name,pr.last_name,pr.ema
     ON sw.id = sv.software_id
   LEFT JOIN software_version_vm as svvm
     ON svvm.software_version_id = sv.id
-  LEFT JOIN person_software as w
-    ON w.software_id = sw.id
-  LEFT JOIN persons as pr
-    ON w.person_id = pr.id
   WHERE svvm.vm_id = %s''', [vm_id])
 
     res = {}
     for package in registry_dict_cur:
         res[package['software_path']] = dict(package)
+    logging.info(res)
 
     return res
 
