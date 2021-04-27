@@ -5,7 +5,7 @@ if [[ ! -d "${DIR}/venv" ]]; then
   cd "${DIR}" || exit 0
   echo "Performing initial install..."
   pip3 install virtualenv > /dev/null
-  python3 -m virtualenv venv > /dev/null
+  python3 -m venv --system-site-packages venv > /dev/null
   source "${DIR}"/venv/bin/activate
   pip3 install -r requirements.txt > /dev/null
 fi
