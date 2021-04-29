@@ -1,3 +1,4 @@
+pip==21.1
 requests==2.25.1
 zenipy==0.1.5
 psycopg2-binary==2.8.6
