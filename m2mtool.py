@@ -90,14 +90,6 @@ def get_user_email():
 def get_entry_saveframe():
     """ Returns information about the NMRbox user. """
 
-    registry_dict_cur = get_postgres_connection(database="registry", dictionary_cursor=True)[1]
-
-    registry_dict_cur.execute('''
-SELECT institution_type as user_type, ins.name AS institution,p.*
-  FROM persons as p
-  LEFT JOIN institutions AS ins
-    ON ins.id = p.institution_id
-  WHERE p.uid=%s''', [os.getuid()])
     entry = pynmrstar.Saveframe.from_scratch("entry_information", "_Entry")
     entry.add_tags([["Sf_category", "entry_information"], ["Sf_framecode", "entry_information"]])
 
@@ -107,7 +99,15 @@ SELECT institution_type as user_type, ins.name AS institution,p.*
                             "Department_and_institution", "Address_1",
                             "Address_2", "Address_3", "City", "State_province",
                             "Country", "Postal_code", "Role", "Organization_type"])
-    person = dict(registry_dict_cur.fetchone())
+
+    with PostgresHelper(database="registry") as cur:
+        cur.execute('''
+SELECT institution_type as user_type, ins.name AS institution, p.*
+FROM persons as p
+         LEFT JOIN institutions AS ins
+                   ON ins.id = p.institution_id
+WHERE p.uid = %s''', [os.getuid()])
+        person = cur.fetchone()
     for x in person.keys():
         person[x] = "." if person[x] == "" else person[x]
     contact_person.add_data([1, person['email'], person['first_name'],
