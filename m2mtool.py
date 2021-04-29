@@ -199,7 +199,7 @@ def get_user_activity(directory):
     with PostgresHelper() as cur:
         cur.execute('''
 SELECT current_dir,exe,command_line FROM usage.process
-  WHERE uid = %s AND current_dir LIKE %s;''',
+  WHERE uid = %s AND current_dir LIKE %s AND month = 11 and year=2020;''',
                     [os.getuid(), directory + "%"])
         return cur.fetchall()
 
