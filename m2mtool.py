@@ -78,7 +78,7 @@ SELECT slug,url,software_path,version,synopsis
     ON svvm.software_version_id = sv.id
   WHERE svvm.vm_id = %s''', [vm_id])
 
-    return {x['software_path']: x for x in cur}
+        return {x['software_path']: x for x in cur}
 
 
 def get_user_email():
