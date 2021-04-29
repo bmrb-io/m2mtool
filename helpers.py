@@ -1,4 +1,5 @@
 import psycopg2
+import psycopg2.extras
 
 from configuration import configuration
 
