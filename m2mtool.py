@@ -25,18 +25,16 @@
 import json
 import logging
 import os
-import pwd
 import sys
 import time
 import webbrowser
 import xml.etree.cElementTree as ET
 from html import escape as html_escape
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-import psycopg2
-from psycopg2.extras import DictCursor
-
 import bmrbdep
+from helpers import PostgresHelper
 
 try:
     from zenipy import error as display_error, entry as get_input
@@ -60,31 +58,6 @@ from configuration import configuration
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
-###########
-# Methods #
-###########
-
-
-def get_postgres_connection(user=configuration['psql']['user'],
-                            host=configuration['psql']['host'],
-                            database=configuration['psql']['database'],
-                            password=configuration['psql']['password'],
-                            port=configuration['psql']['port'],
-                            dictionary_cursor=False):
-    """ Returns a connection to postgres and a cursor."""
-
-    # Errors connecting will be handled upstream
-    if dictionary_cursor:
-        conn = psycopg2.connect(user=user, host=host, database=database,
-                                port=port, password=password,
-                                cursor_factory=DictCursor)
-    else:
-        conn = psycopg2.connect(user=user, host=host, database=database,
-                                port=port, password=password)
-    cur = conn.cursor()
-
-    return conn, cur
-
 
 def get_software(vm_id=None):
     """ Returns a dictionary of the known software packages."""
@@ -95,9 +68,8 @@ def get_software(vm_id=None):
 
     logging.info("Getting software information.")
 
-    registry_dict_cur = get_postgres_connection(database="registry", dictionary_cursor=True)[1]
-
-    registry_dict_cur.execute('''
+    with PostgresHelper(database='registry') as cur:
+        cur.execute('''
 SELECT slug,url,software_path,version,synopsis
   FROM software as sw
   LEFT JOIN software_versions as sv
@@ -106,19 +78,13 @@ SELECT slug,url,software_path,version,synopsis
     ON svvm.software_version_id = sv.id
   WHERE svvm.vm_id = %s''', [vm_id])
 
-    res = {}
-    for package in registry_dict_cur:
-        res[package['software_path']] = dict(package)
-
-    return res
+    return {x['software_path']: x for x in cur}
 
 
 def get_user_email():
-    registry_dict_cur = get_postgres_connection(database="registry")[1]
-
-    registry_dict_cur.execute('''SELECT email FROM persons WHERE nmrbox_acct=%s''',
-                              [get_username()])
-    return registry_dict_cur.fetchone()[0]
+    with PostgresHelper(database="registry") as cur:
+        cur.execute('''SELECT email FROM persons WHERE uid=%s''', [os.getuid()])
+        return cur.fetchone()['email']
 
 
 def get_entry_saveframe():
@@ -131,7 +97,7 @@ SELECT institution_type as user_type, ins.name AS institution,p.*
   FROM persons as p
   LEFT JOIN institutions AS ins
     ON ins.id = p.institution_id
-  WHERE p.nmrbox_acct=%s''', [get_username()])
+  WHERE p.uid=%s''', [os.getuid()])
     entry = pynmrstar.Saveframe.from_scratch("entry_information", "_Entry")
     entry.add_tags([["Sf_category", "entry_information"], ["Sf_framecode", "entry_information"]])
 
@@ -225,26 +191,17 @@ def build_entry(software_packages):
     return entry
 
 
-def get_username():
-    """ Return the username of the current user."""
-
-    return pwd.getpwuid(os.getuid()).pw_name
-
-
 def get_user_activity(directory):
     """ Prints a summary of the users activity."""
 
     logging.info("Fetching user command activity.")
 
-    dirmod = get_modified_time(directory)
-
-    cur = get_postgres_connection()[1]
-    cur.execute('''
-SELECT runtime,cwd,filename,cmd FROM snoopy
-  WHERE username = %s AND cwd like %s
-  ORDER BY runtime ASC''', [get_username(), directory + "%"])
-
-    return cur.fetchall()
+    with PostgresHelper() as cur:
+        cur.execute('''
+SELECT current_dir,exe,command_line FROM usage.process
+  WHERE uid = %s AND current_dir LIKE %s;''',
+                    [os.getuid(), directory + "%"])
+        return cur.fetchall()
 
 
 def get_vm_version():
@@ -276,10 +233,11 @@ def filter_software(all_packages, path):
 
     activities = []
     activities_dict = {}
+
     for activity in get_user_activity(path):
-        if not activity[2].startswith("/usr/software"):
+        if not activity['exe'].startswith("/usr/software"):
             continue
-        sw_path = os.path.join("/usr/software", activity[2].split("/")[3])
+        sw_path = os.path.join(*Path(activity['software_path']).parts[0:4])
 
         if sw_path not in activities_dict:
             if sw_path in all_packages:
@@ -315,7 +273,8 @@ def main(args):
         nickname = get_input('Enter a nickname')
         if not nickname:
             display_error('Cancelling deposition creation: a nickname is necessary.')
-        with bmrbdep.BMRBDepSession(nmrstar_file=star_file, user_email=get_user_email(),
+        with bmrbdep.BMRBDepSession(nmrstar_file=star_file,
+                                    user_email=get_user_email(),
                                     nickname=nickname) as bmrbdep_session:
             # Upload data files
             for ef in files:
