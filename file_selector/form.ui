@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>563</width>
+    <width>550</width>
     <height>547</height>
    </rect>
   </property>
@@ -33,7 +33,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>The selected files and folders will be imported. Please uncheck the checkbox for any files and folders that you do NOT want imported.</string>
+    <string>The selected files and folders will be imported. Please uncheck the files and folders that you do NOT want imported.</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignJustify|Qt::AlignVCenter</set>
