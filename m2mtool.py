@@ -28,6 +28,7 @@ import os
 import sys
 import time
 import webbrowser
+import file_selector
 import xml.etree.cElementTree as ET
 from html import escape as html_escape
 from pathlib import Path
@@ -36,14 +37,14 @@ from tempfile import NamedTemporaryFile
 import bmrbdep
 from helpers import PostgresHelper
 
-# try:
-#     from zenipy import error as display_error, entry as get_input
-# except ImportError:
-#     def display_error(text):
-#         print('An error occurred: %s' % text)
-#
-#     def get_input(prompt):
-#         return input(prompt + ": ")
+try:
+    from zenipy import error as display_error, entry as get_input
+except ImportError:
+    def display_error(text):
+        print('An error occurred: %s' % text)
+
+    def get_input(prompt):
+        return input(prompt + ": ")
 
 import pynmrstar
 
@@ -262,17 +263,18 @@ def main(args):
     # Fetch the software list
     software = filter_software(get_software(), args[1])
 
-    files = [os.path.join(args[1], x) for x in os.listdir(args[1])]
-    files = filter(lambda x: os.path.isfile(x), files)
+    # Run the file selector window
+    nickname, selected_files = file_selector.run_file_selector(args[1])
+
+    files = [os.path.join(args[1], x) for x in selected_files]
 
     with NamedTemporaryFile() as star_file:
         star_file.write(str(build_entry(software)).encode())
         star_file.flush()
         star_file.seek(0)
 
-        nickname = get_input('Enter a nickname')
-        # if not nickname:
-        #     display_error('Cancelling deposition creation: a nickname is necessary.')
+        if not nickname:
+            display_error('Cancelling deposition creation: a nickname is necessary.')
         with bmrbdep.BMRBDepSession(nmrstar_file=star_file,
                                     user_email=get_user_email(),
                                     nickname=nickname) as bmrbdep_session:
@@ -300,5 +302,5 @@ if __name__ == '__main__':
         main(sys.argv)
     except Exception as e:
         logging.critical(str(e))
-        # display_error(text=html_escape(str(e)))
+        display_error(text=html_escape(str(e)))
         sys.exit(1)

@@ -1,5 +1,4 @@
 import os
-import sys
 import logging
 
 from PyQt5 import QtWidgets, QtCore, uic
@@ -11,16 +10,14 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 
 class Window(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self, directory):
         super().__init__()
 
         ui_path = os.path.join(os.path.dirname(__file__), 'form.ui')
         uic.loadUi(ui_path, self)
 
-        # TODO: add code to assign self.directory
-        test_directory = "/home/nmrbox/0015/jchin/Qt5.12.10/"
-
-        self.directory = test_directory
+        self.nickname = ''
+        self.directory = directory
         self.selected_files = []
 
         # center window on screen
@@ -76,11 +73,9 @@ class Window(QtWidgets.QWidget):
             self.add_subdirectory_files(subdir)
 
         # retrieve deposition nickname
-        nickname = self.plainTextEdit_nickname.toPlainText()
+        self.nickname = self.plainTextEdit_nickname.toPlainText()
 
-        # TODO: pass self.selected_files, nickname to api
-        logging.debug("Nickname: %s, Selected Files: %s", nickname, self.selected_files)
-
+        # close window
         self.close()
 
     def add_subdirectory_files(self, subdirectory):
@@ -95,8 +90,9 @@ class Window(QtWidgets.QWidget):
         self.close()
 
 
-def run_file_selector():
+def run_file_selector(directory):
     app = QtWidgets.QApplication([])
-    widget = Window()
+    widget = Window(directory)
     widget.show()
-    sys.exit(app.exec_())
+    app.exec_()
+    return widget.nickname, widget.selected_files
