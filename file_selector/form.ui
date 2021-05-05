@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>File Upload Tool</string>
+   <string>BMRB Upload Tool</string>
   </property>
   <widget class="QListWidget" name="listWidget_files">
    <property name="geometry">

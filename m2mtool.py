@@ -36,14 +36,14 @@ from tempfile import NamedTemporaryFile
 import bmrbdep
 from helpers import PostgresHelper
 
-try:
-    from zenipy import error as display_error, entry as get_input
-except ImportError:
-    def display_error(text):
-        print('An error occurred: %s' % text)
-
-    def get_input(prompt):
-        return input(prompt + ": ")
+# try:
+#     from zenipy import error as display_error, entry as get_input
+# except ImportError:
+#     def display_error(text):
+#         print('An error occurred: %s' % text)
+#
+#     def get_input(prompt):
+#         return input(prompt + ": ")
 
 import pynmrstar
 
@@ -271,8 +271,8 @@ def main(args):
         star_file.seek(0)
 
         nickname = get_input('Enter a nickname')
-        if not nickname:
-            display_error('Cancelling deposition creation: a nickname is necessary.')
+        # if not nickname:
+        #     display_error('Cancelling deposition creation: a nickname is necessary.')
         with bmrbdep.BMRBDepSession(nmrstar_file=star_file,
                                     user_email=get_user_email(),
                                     nickname=nickname) as bmrbdep_session:
@@ -300,5 +300,5 @@ if __name__ == '__main__':
         main(sys.argv)
     except Exception as e:
         logging.critical(str(e))
-        display_error(text=html_escape(str(e)))
+        # display_error(text=html_escape(str(e)))
         sys.exit(1)

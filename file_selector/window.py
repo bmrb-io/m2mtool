@@ -6,7 +6,7 @@ from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import QStyle, QApplication, QDesktopWidget
 from PyQt5.QtGui import QIcon
 
-logging.basicConfig(filename="debug.log", format='%(asctime)s %(message)s')
+logging.basicConfig(filename="debug.log", format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logging.getLogger().setLevel(logging.DEBUG)
 
 
