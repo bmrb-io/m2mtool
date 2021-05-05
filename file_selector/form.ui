@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>File Import Tool</string>
+   <string>File Upload Tool</string>
   </property>
   <widget class="QListWidget" name="listWidget_files">
    <property name="geometry">
@@ -33,7 +33,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>The selected files and folders will be imported. Please uncheck the files and folders that you do NOT want imported.</string>
+    <string>The selected files and folders will be uploaded. Please uncheck the files and folders that you do NOT want uploaded.</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignJustify|Qt::AlignVCenter</set>
@@ -74,7 +74,7 @@
   <widget class="QPushButton" name="pushButton_cancel">
    <property name="geometry">
     <rect>
-     <x>98</x>
+     <x>80</x>
      <y>490</y>
      <width>150</width>
      <height>30</height>
@@ -87,14 +87,14 @@
   <widget class="QPushButton" name="pushButton_submit">
    <property name="geometry">
     <rect>
-     <x>248</x>
+     <x>270</x>
      <y>490</y>
-     <width>180</width>
+     <width>185</width>
      <height>30</height>
     </rect>
    </property>
    <property name="text">
-    <string>Import Selected Files</string>
+    <string>Upload Selected Files</string>
    </property>
   </widget>
  </widget>
