@@ -1,3 +1,3 @@
-from file_selector import run_file_selector
+from file_selector.window import run_file_selector
 
 run_file_selector()

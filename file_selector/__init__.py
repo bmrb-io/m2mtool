@@ -1,11 +1,3 @@
-import sys
-from PyQt5 import QtWidgets
+from file_selector.window import run_file_selector
 
-from file_selector.window import Window
-
-
-def run_file_selector():
-    app = QtWidgets.QApplication([])
-    widget = Window()
-    widget.show()
-    sys.exit(app.exec_())
+__all__ = ['run_file_selector']

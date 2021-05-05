@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 
 from PyQt5 import QtWidgets, QtCore, uic
@@ -92,3 +93,10 @@ class Window(QtWidgets.QWidget):
 
     def cancel(self):
         self.close()
+
+
+def run_file_selector():
+    app = QtWidgets.QApplication([])
+    widget = Window()
+    widget.show()
+    sys.exit(app.exec_())
