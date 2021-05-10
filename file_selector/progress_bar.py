@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import List
 
 from PyQt5 import QtWidgets, QtCore, uic
@@ -18,9 +19,12 @@ class ProgressBar(QtWidgets.QWidget):
         self.session: BMRBDepSession = session
         self.files: List[str] = files
         self.count: int = len(files)
+
+        # initialize display
         self.label.setText(f'0 of {self.count} files uploaded...')
         self.progressBar.setValue(0)
 
+        # initialize file uploader, connect to gui
         self.uploader: Uploader = Uploader(self.files)
         self.uploader.start()
         self.uploader.file_uploaded.connect(self.update_progress_bar)
@@ -34,6 +38,10 @@ class ProgressBar(QtWidgets.QWidget):
         self.close()
         self.show_success()
 
+    def closeEvent(self, event) -> None:
+        self.show_cancel()
+        sys.exit()
+
     @staticmethod
     def show_success() -> None:
         # show success message after upload complete
@@ -42,8 +50,17 @@ class ProgressBar(QtWidgets.QWidget):
         msg.setText("Your files have been uploaded successfully.")
         msg.exec_()
 
+    @staticmethod
+    def show_cancel() -> None:
+        # show cancellation message if user closes window
+        msg = QMessageBox()
+        msg.setWindowTitle("Upload cancelled")
+        msg.setText("Your deposition upload was cancelled.")
+        msg.exec_()
+
 
 class Uploader(QtCore.QThread):
+    # handles actual file upload
     file_uploaded = pyqtSignal(int)
     finished = pyqtSignal()
 
