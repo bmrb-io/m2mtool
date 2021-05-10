@@ -35,7 +35,6 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import bmrbdep
-from helpers import PostgresHelper
 
 try:
     from zenipy import error as display_error, entry as get_input
@@ -47,6 +46,8 @@ except ImportError:
         return input(prompt + ": ")
 
 import pynmrstar
+import dbus
+import requests
 
 #########################
 # Module initialization #
@@ -60,6 +61,21 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 
+def get_token():
+    """ Gets a token to log in for the current user """
+
+    # get the session bus
+    bus = dbus.SystemBus()
+    # get the object
+    the_object = bus.get_object("org.nmrbox.notices", "/org/nmrbox/notices")
+    # get the interface
+    the_interface = dbus.Interface(the_object, "org.nmrbox.notices")
+
+    # NOTE: calling login_token with a uid other than that of the calling process will result in an error
+    token = the_interface.login_token(os.getuid())
+    return token
+
+
 def get_software(vm_id=None):
     """ Returns a dictionary of the known software packages."""
 
@@ -69,23 +85,43 @@ def get_software(vm_id=None):
 
     logging.info("Getting software information.")
 
-    with PostgresHelper(database='registry') as cur:
-        cur.execute('''
-SELECT slug,url,software_path,version,synopsis
-  FROM software as sw
-  LEFT JOIN software_versions as sv
-    ON sw.id = sv.software_id
-  LEFT JOIN software_version_vm as svvm
-    ON svvm.software_version_id = sv.id
-  WHERE svvm.vm_id = %s''', [vm_id])
+#     with PostgresHelper(database='staging') as cur:
+#         cur.execute('''
+# SELECT slug,url,software_path,version,synopsis
+#   FROM software as sw
+#   LEFT JOIN software_versions as sv
+#     ON sw.id = sv.software_id
+#   LEFT JOIN software_version_vm as svvm
+#     ON svvm.software_version_id = sv.id
+#   WHERE svvm.vm_id = %s''', [vm_id])
+#
+#         return {x['software_path']: x for x in cur}
 
-        return {x['software_path']: x for x in cur}
+    with requests.Session() as s:
+        try:
+            r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+            r.raise_for_status()
+            r = s.get('https://apidev.nmrbox.org/user/get-software', params={'vm_id': vm_id})
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            logging.exception("Encountered error when retrieving software: \n%s", err)
+        return r.json()
 
 
 def get_user_email():
-    with PostgresHelper(database="registry") as cur:
-        cur.execute('''SELECT email FROM persons WHERE uid=%s''', [os.getuid()])
-        return cur.fetchone()['email']
+    # with PostgresHelper(database='staging') as cur:
+    #     cur.execute('''SELECT email FROM persons WHERE uid=%s''', [os.getuid()])
+    #     return cur.fetchone()['email']
+
+    with requests.Session() as s:
+        try:
+            r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+            r.raise_for_status()
+            r = s.get('https://apidev.nmrbox.org/user/person')
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            logging.exception("Encountered error when retrieving user info: \n%s", err)
+        return r.json()['data']['email']
 
 
 def get_entry_saveframe():
@@ -101,14 +137,25 @@ def get_entry_saveframe():
                             "Address_2", "Address_3", "City", "State_province",
                             "Country", "Postal_code", "Role", "Organization_type"])
 
-    with PostgresHelper(database="registry") as cur:
-        cur.execute('''
-SELECT institution_type as user_type, ins.name AS institution, p.*
-FROM persons as p
-         LEFT JOIN institutions AS ins
-                   ON ins.id = p.institution_id
-WHERE p.uid = %s''', [os.getuid()])
-        person = cur.fetchone()
+#     with PostgresHelper(database="staging") as cur:
+#         cur.execute('''
+# SELECT institution_type as user_type, ins.name AS institution, p.*
+# FROM persons as p
+#          LEFT JOIN institutions AS ins
+#                    ON ins.id = p.institution_id
+# WHERE p.uid = %s''', [os.getuid()])
+#         person = cur.fetchone()
+
+    with requests.Session() as s:
+        try:
+            r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+            r.raise_for_status()
+            r = s.get('https://apidev.nmrbox.org/user/get-person-institution')
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            logging.exception("Encountered error when retrieving user info: \n%s", err)
+        person = r.json()
+
     for x in person.keys():
         person[x] = "." if person[x] == "" else person[x]
     contact_person.add_data([1, person['email'], person['first_name'],
@@ -197,12 +244,22 @@ def get_user_activity(directory):
 
     logging.info("Fetching user command activity.")
 
-    with PostgresHelper() as cur:
-        cur.execute('''
-SELECT current_dir,exe,command_line FROM usage.process
-  WHERE uid = %s AND current_dir LIKE %s AND month = 11 and year=2020;''',
-                    [os.getuid(), directory + "%"])
-        return cur.fetchall()
+#     with PostgresHelper() as cur:
+#         cur.execute('''
+# SELECT current_dir,exe,command_line FROM usage.process
+#   WHERE uid = %s AND current_dir LIKE %s AND month = 11 and year=2020;''',
+#                     [os.getuid(), directory + "%"])
+#         return cur.fetchall()
+
+    with requests.Session() as s:
+        try:
+            r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+            r.raise_for_status()
+            r = s.get('https://apidev.nmrbox.org/user/get-user-activity', params={'directory': directory})
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            logging.exception("Encountered error when retrieving software: \n%s", err)
+        return r.json()
 
 
 def get_vm_version():
@@ -248,10 +305,9 @@ def filter_software(all_packages, path):
     return activities
 
 
-# Demo what we can do
-def main(args):
-    # If the session exists, re-open it
-    session_file = os.path.join(args[1], '.bmrbdep_session')
+def create_deposition(path):
+    # If the sessions exists, re-open it
+    session_file = os.path.join(path, '.bmrbdep_session')
     if os.path.isfile(session_file):
         logging.info("Loading existing session...")
         session_info = json.loads(open(session_file, "r").read())
@@ -260,13 +316,11 @@ def main(args):
         webbrowser.open_new_tab(bmrbdep_session.session_url)
         sys.exit(0)
 
+    # Run the file selector
+    nickname, selected_files = file_selector.run_file_selector(path)
+
     # Fetch the software list
-    software = filter_software(get_software(), args[1])
-
-    # Run the file selector window
-    nickname, selected_files = file_selector.run_file_selector(args[1])
-
-    files = [os.path.join(args[1], x) for x in selected_files]
+    software = filter_software(get_software(), path)
 
     with NamedTemporaryFile() as star_file:
         star_file.write(str(build_entry(software)).encode())
@@ -278,9 +332,10 @@ def main(args):
         with bmrbdep.BMRBDepSession(nmrstar_file=star_file,
                                     user_email=get_user_email(),
                                     nickname=nickname) as bmrbdep_session:
-            # Upload data files
-            for ef in files:
-                bmrbdep_session.upload_file(ef)
+
+            # Run the progress bar, which handles uploading of data files
+            file_selector.run_progress_bar(selected_files, bmrbdep_session)
+
             # Delete the metadata file from the "upload file" list
             bmrbdep_session.delete_file('m2mtool_generated.str')
 
@@ -297,9 +352,10 @@ def main(args):
 
 # Run the code in this module
 if __name__ == '__main__':
-
+    test_path = "/home/nmrbox/0015/jchin/Qt5.12.10/"  # delete later
     try:
-        main(sys.argv)
+        # create_deposition(sys.argv[1])  # restore later
+        create_deposition(test_path)  # delete later
     except Exception as e:
         logging.critical(str(e))
         display_error(text=html_escape(str(e)))

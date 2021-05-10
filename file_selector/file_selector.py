@@ -13,7 +13,7 @@ class Window(QtWidgets.QWidget):
     def __init__(self, directory):
         super().__init__()
 
-        ui_path = os.path.join(os.path.dirname(__file__), 'form.ui')
+        ui_path = os.path.join(os.path.dirname(__file__), 'selector.ui')
         uic.loadUi(ui_path, self)
 
         self.nickname = ''
@@ -58,9 +58,9 @@ class Window(QtWidgets.QWidget):
             self.listWidget_files.addItem(list_item)
 
     def submit(self):
+        # add selected files to self.selected_files and create list of selected subdirectories
         selected_subdirectories = []
 
-        # add selected files to self.selected_files and create list of selected subdirectories
         for index in range(self.listWidget_files.count()):
             if self.listWidget_files.item(index).checkState() == QtCore.Qt.Checked:
                 if self.listWidget_files.item(index).data(QtCore.Qt.UserRole) == "file":
@@ -71,6 +71,9 @@ class Window(QtWidgets.QWidget):
         # recursively add files from selected subdirectories to selected_files list
         for subdir in selected_subdirectories:
             self.add_subdirectory_files(subdir)
+
+        # join with root directory path to create final selected_files list
+        self.selected_files = [os.path.join(self.directory, x) for x in self.selected_files]
 
         # retrieve deposition nickname
         self.nickname = self.plainTextEdit_nickname.toPlainText()

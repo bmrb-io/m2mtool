@@ -1,3 +1,7 @@
 .idea/
 env/
 /config.json
+/test.py
+/debug.log
+/get_tunnel.sh
+/temp_notes.py
