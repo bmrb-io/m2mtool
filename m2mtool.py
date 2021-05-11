@@ -61,7 +61,7 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-def get_software(api: ApiSession.requests_session, vm_id=None):
+def get_software(api: ApiSession.requests_session, vm_id=None) -> dict:
     """ Returns a dictionary of the known software packages."""
 
     # Determine the VM version
@@ -99,7 +99,7 @@ def get_software(api: ApiSession.requests_session, vm_id=None):
     return r.json()
 
 
-def get_user_email():
+def get_user_email() -> str:
     # with PostgresHelper(database='staging') as cur:
     #     cur.execute('''SELECT email FROM persons WHERE uid=%s''', [os.getuid()])
     #     return cur.fetchone()['email']
@@ -123,7 +123,7 @@ def get_user_email():
         return r.json()['data']['email']
 
 
-def get_entry_saveframe():
+def get_entry_saveframe() -> list:
     """ Returns information about the NMRbox user. """
 
     entry = pynmrstar.Saveframe.from_scratch("entry_information", "_Entry")
@@ -192,7 +192,7 @@ def get_entry_saveframe():
     return [entry, citation]
 
 
-def build_entry(software_packages):
+def build_entry(software_packages) -> pynmrstar.Entry:
     """ Builds a NMR-STAR entry. Pass a list of
     software package dictionary (as returned by get_software)."""
 
@@ -245,7 +245,7 @@ def build_entry(software_packages):
     return entry
 
 
-def get_user_activity(directory, api: ApiSession.requests_session):
+def get_user_activity(directory: str, api: ApiSession.requests_session) -> dict:
     """ Prints a summary of the users activity."""
 
     logging.info("Fetching user command activity.")
@@ -292,13 +292,13 @@ def get_vm_version():
     return configuration['latest_vm_version']
 
 
-def get_modified_time(path):
+def get_modified_time(path) -> float:
     """ Returns the last modified time of the file/folder."""
 
     return os.path.getmtime(path)
 
 
-def filter_software(all_packages, path, api: ApiSession.requests_session):
+def filter_software(all_packages: dict, path: str, api: ApiSession.requests_session) -> list:
     """ Returns the software packages used by this user in the selected
     directory. """
 
@@ -318,7 +318,7 @@ def filter_software(all_packages, path, api: ApiSession.requests_session):
     return activities
 
 
-def create_deposition(path):
+def create_deposition(path: str):
     # If the sessions exists, re-open it
     session_file = os.path.join(path, '.bmrbdep_session')
     if os.path.isfile(session_file):

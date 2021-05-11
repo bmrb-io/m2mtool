@@ -75,7 +75,7 @@ class ApiSession:
         self.session.close()
 
 
-def get_token():
+def get_token() -> dbus.String:
     """ Gets a token to log in for the current user """
 
     # get the session bus
