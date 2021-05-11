@@ -1,5 +1,10 @@
+import logging
+
 import psycopg2
 import psycopg2.extras
+import requests
+import os
+import dbus
 
 from configuration import configuration
 
@@ -47,3 +52,39 @@ class PostgresHelper:
 
     def commit(self):
         self._conn.commit()
+
+
+class ApiSession:
+    def __init__(self):
+        s = requests.Session()
+        try:
+            r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            logging.exception("Encountered error when getting token: \n%s", err)
+        self.session = s
+
+    def __enter__(self):
+        return self.session
+
+    @property
+    def requests_session(self):
+        return self.session
+
+    def __exit__(self):
+        self.session.close()
+
+
+def get_token():
+    """ Gets a token to log in for the current user """
+
+    # get the session bus
+    bus = dbus.SystemBus()
+    # get the object
+    the_object = bus.get_object("org.nmrbox.notices", "/org/nmrbox/notices")
+    # get the interface
+    the_interface = dbus.Interface(the_object, "org.nmrbox.notices")
+
+    # NOTE: calling login_token with a uid other than that of the calling process will result in an error
+    token = the_interface.login_token(os.getuid())
+    return token

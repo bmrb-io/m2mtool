@@ -33,6 +33,7 @@ import xml.etree.cElementTree as ET
 from html import escape as html_escape
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from helpers import ApiSession
 
 import bmrbdep
 
@@ -46,7 +47,6 @@ except ImportError:
         return input(prompt + ": ")
 
 import pynmrstar
-import dbus
 import requests
 
 #########################
@@ -61,22 +61,7 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-def get_token():
-    """ Gets a token to log in for the current user """
-
-    # get the session bus
-    bus = dbus.SystemBus()
-    # get the object
-    the_object = bus.get_object("org.nmrbox.notices", "/org/nmrbox/notices")
-    # get the interface
-    the_interface = dbus.Interface(the_object, "org.nmrbox.notices")
-
-    # NOTE: calling login_token with a uid other than that of the calling process will result in an error
-    token = the_interface.login_token(os.getuid())
-    return token
-
-
-def get_software(vm_id=None):
+def get_software(api: ApiSession.requests_session, vm_id=None):
     """ Returns a dictionary of the known software packages."""
 
     # Determine the VM version
@@ -97,15 +82,21 @@ def get_software(vm_id=None):
 #
 #         return {x['software_path']: x for x in cur}
 
-    with requests.Session() as s:
-        try:
-            r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
-            r.raise_for_status()
-            r = s.get('https://apidev.nmrbox.org/user/get-software', params={'vm_id': vm_id})
-            r.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            logging.exception("Encountered error when retrieving software: \n%s", err)
-        return r.json()
+    # with requests.Session() as s:
+    #     try:
+    #         r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+    #         r.raise_for_status()
+    #         r = s.get('https://apidev.nmrbox.org/user/get-software', params={'vm_id': vm_id})
+    #         r.raise_for_status()
+    #     except requests.exceptions.HTTPError as err:
+    #         logging.exception("Encountered error when retrieving software: \n%s", err)
+    #     return r.json()
+    try:
+        r = api.get('https://apidev.nmrbox.org/user/get-software', params={'vm_id': vm_id})
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        logging.exception("Encountered error when retrieving software: \n%s", err)
+    return r.json()
 
 
 def get_user_email():
@@ -113,11 +104,19 @@ def get_user_email():
     #     cur.execute('''SELECT email FROM persons WHERE uid=%s''', [os.getuid()])
     #     return cur.fetchone()['email']
 
-    with requests.Session() as s:
+    # with requests.Session() as s:
+    #     try:
+    #         r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+    #         r.raise_for_status()
+    #         r = s.get('https://apidev.nmrbox.org/user/person')
+    #         r.raise_for_status()
+    #     except requests.exceptions.HTTPError as err:
+    #         logging.exception("Encountered error when retrieving user info: \n%s", err)
+    #     return r.json()['data']['email']
+
+    with ApiSession() as api:
         try:
-            r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
-            r.raise_for_status()
-            r = s.get('https://apidev.nmrbox.org/user/person')
+            r = api.get('https://apidev.nmrbox.org/user/person')
             r.raise_for_status()
         except requests.exceptions.HTTPError as err:
             logging.exception("Encountered error when retrieving user info: \n%s", err)
@@ -146,14 +145,21 @@ def get_entry_saveframe():
 # WHERE p.uid = %s''', [os.getuid()])
 #         person = cur.fetchone()
 
-    with requests.Session() as s:
+    # with requests.Session() as s:
+    #     try:
+    #         r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+    #         r.raise_for_status()
+    #         r = s.get('https://apidev.nmrbox.org/user/get-person-institution')
+    #         r.raise_for_status()
+    #     except requests.exceptions.HTTPError as err:
+    #         logging.exception("Encountered error when retrieving person and institution info: \n%s", err)
+    #     person = r.json()
+    with ApiSession() as api:
         try:
-            r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
-            r.raise_for_status()
-            r = s.get('https://apidev.nmrbox.org/user/get-person-institution')
+            r = api.get('https://apidev.nmrbox.org/user/get-person-institution')
             r.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            logging.exception("Encountered error when retrieving user info: \n%s", err)
+            logging.exception("Encountered error when retrieving person and institution info: \n%s", err)
         person = r.json()
 
     for x in person.keys():
@@ -239,7 +245,7 @@ def build_entry(software_packages):
     return entry
 
 
-def get_user_activity(directory):
+def get_user_activity(directory, api: ApiSession.requests_session):
     """ Prints a summary of the users activity."""
 
     logging.info("Fetching user command activity.")
@@ -250,16 +256,23 @@ def get_user_activity(directory):
 #   WHERE uid = %s AND current_dir LIKE %s AND month = 11 and year=2020;''',
 #                     [os.getuid(), directory + "%"])
 #         return cur.fetchall()
+#
+#     with requests.Session() as s:
+#         try:
+#             r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+#             r.raise_for_status()
+#             r = s.get('https://apidev.nmrbox.org/user/get-user-activity', params={'directory': directory})
+#             r.raise_for_status()
+#         except requests.exceptions.HTTPError as err:
+#             logging.exception("Encountered error when retrieving user activity: \n%s", err)
+#         return r.json()
 
-    with requests.Session() as s:
-        try:
-            r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
-            r.raise_for_status()
-            r = s.get('https://apidev.nmrbox.org/user/get-user-activity', params={'directory': directory})
-            r.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            logging.exception("Encountered error when retrieving software: \n%s", err)
-        return r.json()
+    try:
+        r = api.get('https://apidev.nmrbox.org/user/get-user-activity', params={'directory': directory})
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        logging.exception("Encountered error when retrieving user activity: \n%s", err)
+    return r.json()
 
 
 def get_vm_version():
@@ -285,14 +298,14 @@ def get_modified_time(path):
     return os.path.getmtime(path)
 
 
-def filter_software(all_packages, path):
+def filter_software(all_packages, path, api: ApiSession.requests_session):
     """ Returns the software packages used by this user in the selected
     directory. """
 
     activities = []
     activities_dict = {}
 
-    for activity in get_user_activity(path):
+    for activity in get_user_activity(path, api):
         if not activity['exe'].startswith("/usr/software"):
             continue
         sw_path = os.path.join(*Path(activity['software_path']).parts[0:4])
@@ -320,7 +333,9 @@ def create_deposition(path):
     nickname, selected_files = file_selector.run_file_selector(path)
 
     # Fetch the software list
-    software = filter_software(get_software(), path)
+    # software = filter_software(get_software(), path)
+    with ApiSession() as api:
+        software = filter_software(get_software(api), path, api)
 
     with NamedTemporaryFile() as star_file:
         star_file.write(str(build_entry(software)).encode())
