@@ -4,7 +4,7 @@ from typing import List
 
 from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QDesktopWidget
 
 from bmrbdep import BMRBDepSession
 
@@ -20,25 +20,34 @@ class ProgressBar(QtWidgets.QWidget):
         self.files: List[str] = files
         self.count: int = len(files)
 
-        # initialize display
+        # center window on screen
+        qt_rectangle = self.frameGeometry()
+        center_point = QDesktopWidget().availableGeometry().center()
+        qt_rectangle.moveCenter(center_point)
+        self.move(qt_rectangle.topLeft())
+
+        # initialize display of progress bar text/image
         self.label.setText(f'0 of {self.count} files uploaded...')
         self.progressBar.setValue(0)
 
-        # initialize file uploader, connect to gui
+        # initialize file uploader, connect uploader to gui
         self.uploader: Uploader = Uploader(self.files)
         self.uploader.start()
         self.uploader.file_uploaded.connect(self.update_progress_bar)
         self.uploader.finished.connect(self.finished)
 
     def update_progress_bar(self, uploaded_count: int) -> None:
+        # updates display of progress bar text/image
         self.label.setText(f'{uploaded_count} of {self.count} files uploaded...')
         self.progressBar.setValue(uploaded_count / self.count * 100)
 
     def finished(self) -> None:
+        # runs after file upload finished
         self.close()
         self.show_success()
 
     def closeEvent(self, event) -> None:
+        # runs if user closes window in middle of upload
         self.show_cancel()
         sys.exit()
 
@@ -60,14 +69,13 @@ class ProgressBar(QtWidgets.QWidget):
 
 
 class Uploader(QtCore.QThread):
-    # handles actual file upload
+    # this class handles the actual file upload
     file_uploaded = pyqtSignal(int)
     finished = pyqtSignal()
 
     def __init__(self, files):
         super().__init__()
         self.files = files
-        self.count = len(files)
 
     def run(self):
         counter = 0
