@@ -1,5 +1,6 @@
 import os
 import logging
+from typing import List, Tuple
 
 from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import QStyle, QApplication, QDesktopWidget
@@ -16,9 +17,9 @@ class Window(QtWidgets.QWidget):
         ui_path = os.path.join(os.path.dirname(__file__), 'selector.ui')
         uic.loadUi(ui_path, self)
 
-        self.nickname = ''
-        self.directory = directory
-        self.selected_files = []
+        self.nickname: str = ''
+        self.directory: str = directory
+        self.selected_files: List[str] = []
 
         # center window on screen
         qt_rectangle = self.frameGeometry()
@@ -33,9 +34,9 @@ class Window(QtWidgets.QWidget):
         self.pushButton_submit.clicked.connect(self.submit)
         self.pushButton_cancel.clicked.connect(self.cancel)
 
-    def populate_files(self):
+    def populate_files(self) -> None:
 
-        def alpha_and_folder(item):
+        def alpha_and_folder(item) -> Tuple[bool, str]:
             return os.path.isfile(os.path.join(self.directory, item)), item.lower()
 
         # sort the files/subdirectories alphabetically and by item type (file v. folder)
@@ -57,7 +58,7 @@ class Window(QtWidgets.QWidget):
             list_item.setCheckState(QtCore.Qt.Checked)
             self.listWidget_files.addItem(list_item)
 
-    def submit(self):
+    def submit(self) -> None:
         # add selected files to self.selected_files and create list of selected subdirectories
         selected_subdirectories = []
 
@@ -81,7 +82,7 @@ class Window(QtWidgets.QWidget):
         # close window
         self.close()
 
-    def add_subdirectory_files(self, subdirectory):
+    def add_subdirectory_files(self, subdirectory) -> None:
         # adds files from subdirectory to self.selected_files
         for each in os.listdir(os.path.join(os.path.dirname(self.directory), subdirectory)):
             if os.path.isfile(os.path.join(os.path.dirname(self.directory), subdirectory, each)):
@@ -89,11 +90,11 @@ class Window(QtWidgets.QWidget):
             elif os.path.isdir(os.path.join(os.path.dirname(self.directory), subdirectory, each)):
                 self.add_subdirectory_files(f'{subdirectory}/{each}')
 
-    def cancel(self):
+    def cancel(self) -> None:
         self.close()
 
 
-def run_file_selector(directory):
+def run_file_selector(directory: str) -> Tuple[str, List[str]]:
     app = QtWidgets.QApplication([])
     widget = Window(directory)
     widget.show()
