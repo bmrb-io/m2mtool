@@ -334,7 +334,7 @@ def show_error_to_user(err: IOError) -> None:
     msg.setText(f"{error_message}\n\nPlease contact support@nmrbox.org.")
 
     msg.exec_()
-    sys.exit(app.exec_())  # TODO: need to fix so sys.exit runs when msg closes
+    sys.exit(app.exec_())  # TODO: need to redo this, sys.exit() not reached
 
 
 def create_deposition(path: str):
@@ -369,7 +369,7 @@ def create_deposition(path: str):
                                             nickname=nickname) as bmrbdep_session:
 
                     # Run the progress bar, which handles uploading of data files
-                    file_selector.run_progress_bar(selected_files, bmrbdep_session)
+                    file_selector.run_progress_bar(bmrbdep_session, selected_files)
 
                     # Delete the metadata file from the "upload file" list
                     bmrbdep_session.delete_file('m2mtool_generated.str')

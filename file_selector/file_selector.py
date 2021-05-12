@@ -10,7 +10,7 @@ logging.basicConfig(filename="debug.log", format='%(asctime)s %(name)s %(levelna
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-class Window(QtWidgets.QWidget):
+class FileSelector(QtWidgets.QWidget):
     def __init__(self, directory):
         super().__init__()
 
@@ -96,7 +96,7 @@ class Window(QtWidgets.QWidget):
 
 def run_file_selector(directory: str) -> Tuple[str, List[str]]:
     app = QtWidgets.QApplication([])
-    widget = Window(directory)
+    widget = FileSelector(directory)
     widget.show()
     app.exec_()
     return widget.nickname, widget.selected_files

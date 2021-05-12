@@ -10,7 +10,7 @@ from bmrbdep import BMRBDepSession
 
 
 class ProgressBar(QtWidgets.QWidget):
-    def __init__(self, files, session):
+    def __init__(self, session, files):
         super().__init__()
 
         ui_path = os.path.join(os.path.dirname(__file__), 'bar.ui')
@@ -31,7 +31,7 @@ class ProgressBar(QtWidgets.QWidget):
         self.progressBar.setValue(0)
 
         # initialize file uploader, connect uploader to gui
-        self.uploader: Uploader = Uploader(self.files)
+        self.uploader: Uploader = Uploader(self.session, self.files)
         self.uploader.start()
         self.uploader.file_uploaded.connect(self.update_progress_bar)
         self.uploader.finished.connect(self.finished)
@@ -48,6 +48,7 @@ class ProgressBar(QtWidgets.QWidget):
 
     def closeEvent(self, event) -> None:
         # runs if user closes window in middle of upload
+        self.close()
         self.show_cancel()
         sys.exit()
 
@@ -73,9 +74,10 @@ class Uploader(QtCore.QThread):
     file_uploaded = pyqtSignal(int)
     finished = pyqtSignal()
 
-    def __init__(self, files):
+    def __init__(self, session, files):
         super().__init__()
-        self.files = files
+        self.session: BMRBDepSession = session
+        self.files: List[str] = files
 
     def run(self):
         counter = 0
@@ -86,8 +88,8 @@ class Uploader(QtCore.QThread):
         self.finished.emit()
 
 
-def run_progress_bar(files: List[str], session: BMRBDepSession):
+def run_progress_bar(session: BMRBDepSession, files: List[str]):
     app = QtWidgets.QApplication([])
-    widget = ProgressBar(files, session)
+    widget = ProgressBar(session, files)
     widget.show()
     app.exec_()
