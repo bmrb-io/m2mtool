@@ -28,12 +28,15 @@ import os
 import sys
 import time
 import webbrowser
+
 import file_selector
 import xml.etree.cElementTree as ET
 from html import escape as html_escape
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from helpers import ApiSession
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QMessageBox
 
 import bmrbdep
 
@@ -61,7 +64,7 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-def get_software(api: ApiSession.requests_session, vm_id=None) -> dict:
+def get_software(api: requests.Session, vm_id=None) -> dict:
     """ Returns a dictionary of the known software packages."""
 
     # Determine the VM version
@@ -92,14 +95,15 @@ def get_software(api: ApiSession.requests_session, vm_id=None) -> dict:
     #         logging.exception("Encountered error when retrieving software: \n%s", err)
     #     return r.json()
     try:
-        r = api.get('https://apidev.nmrbox.org/user/get-software', params={'vm_id': vm_id})
+        r = api.get('https://apidev.nmrbox.org/user/dev/get-software', params={'vm_id': vm_id})
         r.raise_for_status()
+        return r.json()
     except requests.exceptions.HTTPError as err:
         logging.exception("Encountered error when retrieving software: \n%s", err)
-    return r.json()
+        raise IOError('Error occurred during attempt to retrieve software.')
 
 
-def get_user_email() -> str:
+def get_user_email(api: requests.Session) -> str:
     # with PostgresHelper(database='staging') as cur:
     #     cur.execute('''SELECT email FROM persons WHERE uid=%s''', [os.getuid()])
     #     return cur.fetchone()['email']
@@ -114,16 +118,16 @@ def get_user_email() -> str:
     #         logging.exception("Encountered error when retrieving user info: \n%s", err)
     #     return r.json()['data']['email']
 
-    with ApiSession() as api:
-        try:
-            r = api.get('https://apidev.nmrbox.org/user/person')
-            r.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            logging.exception("Encountered error when retrieving user info: \n%s", err)
+    try:
+        r = api.get('https://apidev.nmrbox.org/user/person')
+        r.raise_for_status()
         return r.json()['data']['email']
+    except requests.exceptions.HTTPError as err:
+        logging.exception("Encountered error when retrieving user info: \n%s", err)
+        raise IOError('Error occurred during attempt to retrieve user information.')
 
 
-def get_entry_saveframe() -> list:
+def get_entry_saveframe(api: requests.Session) -> list:
     """ Returns information about the NMRbox user. """
 
     entry = pynmrstar.Saveframe.from_scratch("entry_information", "_Entry")
@@ -154,13 +158,14 @@ def get_entry_saveframe() -> list:
     #     except requests.exceptions.HTTPError as err:
     #         logging.exception("Encountered error when retrieving person and institution info: \n%s", err)
     #     person = r.json()
-    with ApiSession() as api:
-        try:
-            r = api.get('https://apidev.nmrbox.org/user/get-person-institution')
-            r.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            logging.exception("Encountered error when retrieving person and institution info: \n%s", err)
+
+    try:
+        r = api.get('https://apidev.nmrbox.org/user/dev/get-person-institution')
+        r.raise_for_status()
         person = r.json()
+    except requests.exceptions.HTTPError as err:
+        logging.exception("Encountered error when retrieving person and institution info: \n%s", err)
+        raise IOError('Error occurred during attempt to retrieve user and institution information.')
 
     for x in person.keys():
         person[x] = "." if person[x] == "" else person[x]
@@ -192,7 +197,7 @@ def get_entry_saveframe() -> list:
     return [entry, citation]
 
 
-def build_entry(software_packages) -> pynmrstar.Entry:
+def build_entry(api: requests.Session, software_packages: list) -> pynmrstar.Entry:
     """ Builds a NMR-STAR entry. Pass a list of
     software package dictionary (as returned by get_software)."""
 
@@ -200,7 +205,7 @@ def build_entry(software_packages) -> pynmrstar.Entry:
 
     entry = pynmrstar.Entry.from_scratch('NEED_ACC_NUM')
 
-    for frame in get_entry_saveframe():
+    for frame in get_entry_saveframe(api):
         entry.add_saveframe(frame)
 
     # Add NMRbox
@@ -245,7 +250,7 @@ def build_entry(software_packages) -> pynmrstar.Entry:
     return entry
 
 
-def get_user_activity(directory: str, api: ApiSession.requests_session) -> dict:
+def get_user_activity(api: requests.Session, directory: str) -> dict:
     """ Prints a summary of the users activity."""
 
     logging.info("Fetching user command activity.")
@@ -268,11 +273,12 @@ def get_user_activity(directory: str, api: ApiSession.requests_session) -> dict:
 #         return r.json()
 
     try:
-        r = api.get('https://apidev.nmrbox.org/user/get-user-activity', params={'directory': directory})
+        r = api.get('https://apidev.nmrbox.org/user/dev/get-user-activity', params={'directory': directory})
         r.raise_for_status()
+        return r.json()
     except requests.exceptions.HTTPError as err:
         logging.exception("Encountered error when retrieving user activity: \n%s", err)
-    return r.json()
+        raise IOError('Error occurred during attempt to retrieve user activity.')
 
 
 def get_vm_version():
@@ -298,14 +304,14 @@ def get_modified_time(path) -> float:
     return os.path.getmtime(path)
 
 
-def filter_software(all_packages: dict, path: str, api: ApiSession.requests_session) -> list:
+def filter_software(api: requests.Session, all_packages: dict, path: str) -> list:
     """ Returns the software packages used by this user in the selected
     directory. """
 
     activities = []
     activities_dict = {}
 
-    for activity in get_user_activity(path, api):
+    for activity in get_user_activity(api, path):
         if not activity['exe'].startswith("/usr/software"):
             continue
         sw_path = os.path.join(*Path(activity['software_path']).parts[0:4])
@@ -316,6 +322,19 @@ def filter_software(all_packages: dict, path: str, api: ApiSession.requests_sess
                 activities_dict[sw_path] = True
 
     return activities
+
+
+def show_error_to_user(err: IOError) -> None:
+    # show error message to user if a request fails
+    app = QtWidgets.QApplication([])
+    msg = QMessageBox()
+
+    msg.setWindowTitle("Error")
+    error_message = str(err)
+    msg.setText(f"{error_message}\n\nPlease contact support@nmrbox.org.")
+
+    msg.exec_()
+    sys.exit(app.exec_())
 
 
 def create_deposition(path: str):
@@ -335,32 +354,36 @@ def create_deposition(path: str):
     # Fetch the software list
     # software = filter_software(get_software(), path)
     with ApiSession() as api:
-        software = filter_software(get_software(api), path, api)
+        try:
+            software = filter_software(api, get_software(api), path)
 
-    with NamedTemporaryFile() as star_file:
-        star_file.write(str(build_entry(software)).encode())
-        star_file.flush()
-        star_file.seek(0)
+            with NamedTemporaryFile() as star_file:
+                star_file.write(str(build_entry(api, software)).encode())
+                star_file.flush()
+                star_file.seek(0)
 
-        if not nickname:
-            display_error('Cancelling deposition creation: a nickname is necessary.')
-        with bmrbdep.BMRBDepSession(nmrstar_file=star_file,
-                                    user_email=get_user_email(),
-                                    nickname=nickname) as bmrbdep_session:
+                if not nickname:
+                    display_error('Cancelling deposition creation: a nickname is necessary.')
+                with bmrbdep.BMRBDepSession(nmrstar_file=star_file,
+                                            user_email=get_user_email(api),
+                                            nickname=nickname) as bmrbdep_session:
 
-            # Run the progress bar, which handles uploading of data files
-            file_selector.run_progress_bar(selected_files, bmrbdep_session)
+                    # Run the progress bar, which handles uploading of data files
+                    file_selector.run_progress_bar(selected_files, bmrbdep_session)
 
-            # Delete the metadata file from the "upload file" list
-            bmrbdep_session.delete_file('m2mtool_generated.str')
+                    # Delete the metadata file from the "upload file" list
+                    bmrbdep_session.delete_file('m2mtool_generated.str')
 
-        with open(session_file, "w") as session_log:
-            session_info = {"sid": bmrbdep_session.sid, "ctime": time.time()}
-            session_log.write(json.dumps(session_info))
+                with open(session_file, "w") as session_log:
+                    session_info = {"sid": bmrbdep_session.sid, "ctime": time.time()}
+                    session_log.write(json.dumps(session_info))
 
-        # Open the session
-        webbrowser.open_new_tab(bmrbdep_session.session_url)
-        time.sleep(3)
+                # Open the session
+                webbrowser.open_new_tab(bmrbdep_session.session_url)
+                time.sleep(3)
+
+        except IOError as err:
+            show_error_to_user(err)
 
     return 0
 

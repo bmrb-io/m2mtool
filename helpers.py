@@ -56,26 +56,22 @@ class PostgresHelper:
 
 class ApiSession:
     def __init__(self):
-        s = requests.Session()
+        pass
+
+    def __enter__(self) -> requests.Session:
+        self.session = requests.Session()
         try:
-            r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+            r = self.session.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
             r.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            logging.exception("Encountered error when getting token: \n%s", err)
-        self.session = s
-
-    def __enter__(self):
+            logging.exception("Encountered error when logging in using token: \n%s", err)
         return self.session
 
-    @property
-    def requests_session(self):
-        return self.session
-
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.session.close()
 
 
-def get_token() -> dbus.String:
+def get_token() -> str:
     """ Gets a token to log in for the current user """
 
     # get the session bus
