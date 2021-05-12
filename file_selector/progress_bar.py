@@ -48,7 +48,6 @@ class ProgressBar(QtWidgets.QWidget):
 
     def closeEvent(self, event) -> None:
         # runs if user closes window in middle of upload
-        self.close()
         self.show_cancel()
         sys.exit()
 
