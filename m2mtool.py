@@ -95,7 +95,7 @@ def get_software(api: requests.Session, vm_id=None) -> dict:
     #         logging.exception("Encountered error when retrieving software: \n%s", err)
     #     return r.json()
     try:
-        r = api.get('https://apidev.nmrbox.org/user/dev/get-software', params={'vm_id': vm_id})
+        r = api.get('https://apidev.nmrbox.org/user/dev/get-software', json={'vm_id': vm_id})
         r.raise_for_status()
         return r.json()
     except requests.exceptions.HTTPError as err:
@@ -273,7 +273,7 @@ def get_user_activity(api: requests.Session, directory: str) -> dict:
 #         return r.json()
 
     try:
-        r = api.get('https://apidev.nmrbox.org/user/dev/get-user-activity', params={'directory': directory})
+        r = api.get('https://apidev.nmrbox.org/user/dev/get-user-activity', json={'directory': directory})
         r.raise_for_status()
         return r.json()
     except requests.exceptions.HTTPError as err:
@@ -334,7 +334,7 @@ def show_error_to_user(err: IOError) -> None:
     msg.setText(f"{error_message}\n\nPlease contact support@nmrbox.org.")
 
     msg.exec_()
-    sys.exit(app.exec_())
+    sys.exit(app.exec_())  # TODO: need to fix so sys.exit runs when msg closes
 
 
 def create_deposition(path: str):
