@@ -4,4 +4,4 @@ env/
 /test.py
 /debug.log
 /get_tunnel.sh
-/file_selector/test.py
+/file_selector/test_progress_bar.py

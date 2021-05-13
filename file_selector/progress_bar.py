@@ -103,6 +103,7 @@ class Uploader(QtCore.QThread):
         self.session: BMRBDepSession = session
         self.files: List[str] = files
         self.directory: str = directory
+        self.error_occurred: bool = False
 
     def run(self):
         counter = 0
@@ -110,10 +111,13 @@ class Uploader(QtCore.QThread):
             try:
                 self.session.upload_file(file, self.directory)
             except Exception as err:
+                self.error_occurred: bool = True
                 self.error.emit(err, file)
+                break
             counter += 1
             self.file_uploaded.emit(counter)
-        self.finished.emit()
+        if not self.error_occurred:
+            self.finished.emit()
 
     def stop_thread(self):
         self.terminate()
