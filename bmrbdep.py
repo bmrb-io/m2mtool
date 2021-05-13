@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
+import os
 
 import requests
 
@@ -109,16 +110,16 @@ class BMRBDepSession:
         r = self.session.delete(url)
         r.raise_for_status()
 
-    def upload_file(self, file_name):
-        """ Uploads a given file to the session.
-
-        the_file should be a (filename, type) tuple. """
+    def upload_file(self, file_name, path):
+        """ Uploads a given file to the session. """
 
         url = f"{configuration['bmrbdep_root_url']}/deposition/{self.sid}/file"
-        files = {'file': open(file_name, 'rb')}
+        files = {'file': (file_name, open(os.path.join(path, file_name), 'rb'))}
 
         logging.info("Sending file '%s'.", file_name)
         r = self.session.post(url, files=files)
+        if r.status_code != 200:
+            logging.warning('Exception on server - server message: %s', r.text)
         r.raise_for_status()
 
     @property

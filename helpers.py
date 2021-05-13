@@ -61,7 +61,8 @@ class ApiSession:
     def __enter__(self) -> requests.Session:
         self.session = requests.Session()
         try:
-            r = self.session.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
+            url = f"{configuration['api_root_url']}/user/automatic-login"
+            r = self.session.get(url, params={'token': get_token()})
             r.raise_for_status()
         except requests.exceptions.HTTPError as err:
             logging.exception("Encountered error when logging in using token: \n%s", err)

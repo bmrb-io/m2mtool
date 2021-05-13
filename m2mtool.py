@@ -37,6 +37,7 @@ from tempfile import NamedTemporaryFile
 from helpers import ApiSession
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QMessageBox
+from configuration import configuration
 
 import bmrbdep
 
@@ -95,7 +96,8 @@ def get_software(api: requests.Session, vm_id=None) -> dict:
     #         logging.exception("Encountered error when retrieving software: \n%s", err)
     #     return r.json()
     try:
-        r = api.get('https://apidev.nmrbox.org/user/dev/get-software', json={'vm_id': vm_id})
+        url = f"{configuration['api_root_url']}/user/dev/get-software"
+        r = api.get(url, json={'vm_id': vm_id})
         r.raise_for_status()
         return r.json()
     except requests.exceptions.HTTPError as err:
@@ -119,7 +121,8 @@ def get_user_email(api: requests.Session) -> str:
     #     return r.json()['data']['email']
 
     try:
-        r = api.get('https://apidev.nmrbox.org/user/person')
+        url = f"{configuration['api_root_url']}/user/person"
+        r = api.get(url)
         r.raise_for_status()
         return r.json()['data']['email']
     except requests.exceptions.HTTPError as err:
@@ -160,7 +163,8 @@ def get_entry_saveframe(api: requests.Session) -> list:
     #     person = r.json()
 
     try:
-        r = api.get('https://apidev.nmrbox.org/user/dev/get-person-institution')
+        url = f"{configuration['api_root_url']}/user/dev/get-person-institution"
+        r = api.get(url)
         r.raise_for_status()
         person = r.json()
     except requests.exceptions.HTTPError as err:
@@ -273,7 +277,8 @@ def get_user_activity(api: requests.Session, directory: str) -> dict:
 #         return r.json()
 
     try:
-        r = api.get('https://apidev.nmrbox.org/user/dev/get-user-activity', json={'directory': directory})
+        url = f"{configuration['api_root_url']}/user/dev/get-user-activity"
+        r = api.get(url, json={'directory': directory})
         r.raise_for_status()
         return r.json()
     except requests.exceptions.HTTPError as err:
@@ -324,19 +329,6 @@ def filter_software(api: requests.Session, all_packages: dict, path: str) -> lis
     return activities
 
 
-def show_error_to_user(err: IOError) -> None:
-    # show error message to user if a request fails
-    app = QtWidgets.QApplication([])
-    msg = QMessageBox()
-
-    msg.setWindowTitle("Error")
-    error_message = str(err)
-    msg.setText(f"{error_message}\n\nPlease contact support@nmrbox.org.")
-
-    msg.exec_()
-    sys.exit(app.exec_())  # TODO: need to redo this, sys.exit() not reached
-
-
 def create_deposition(path: str):
     # If the sessions exists, re-open it
     session_file = os.path.join(path, '.bmrbdep_session')
@@ -369,7 +361,7 @@ def create_deposition(path: str):
                                             nickname=nickname) as bmrbdep_session:
 
                     # Run the progress bar, which handles uploading of data files
-                    file_selector.run_progress_bar(bmrbdep_session, selected_files)
+                    file_selector.run_progress_bar(bmrbdep_session, selected_files, path)
 
                     # Delete the metadata file from the "upload file" list
                     bmrbdep_session.delete_file('m2mtool_generated.str')
@@ -383,7 +375,7 @@ def create_deposition(path: str):
                 time.sleep(3)
 
         except IOError as err:
-            show_error_to_user(err)
+            file_selector.show_error(err)
 
     return 0
 

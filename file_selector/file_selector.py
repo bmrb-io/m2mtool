@@ -11,7 +11,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 
 class FileSelector(QtWidgets.QWidget):
-    def __init__(self, directory):
+    def __init__(self, directory: str):
         super().__init__()
 
         ui_path = os.path.join(os.path.dirname(__file__), 'selector.ui')
@@ -72,9 +72,6 @@ class FileSelector(QtWidgets.QWidget):
         # recursively add files from selected subdirectories to selected_files list
         for subdir in selected_subdirectories:
             self.add_subdirectory_files(subdir)
-
-        # join with root directory path to create final selected_files list
-        self.selected_files = [os.path.join(self.directory, x) for x in self.selected_files]
 
         # retrieve deposition nickname
         self.nickname = self.plainTextEdit_nickname.toPlainText()

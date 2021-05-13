@@ -1,16 +1,21 @@
 import os
 import sys
+import logging
 from typing import List
 
+import requests
 from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMessageBox, QDesktopWidget
 
 from bmrbdep import BMRBDepSession
 
+logging.basicConfig(filename="debug.log", format='%(asctime)s %(name)s %(levelname)s %(message)s')
+logging.getLogger().setLevel(logging.DEBUG)
+
 
 class ProgressBar(QtWidgets.QWidget):
-    def __init__(self, session, files):
+    def __init__(self, session: BMRBDepSession, files: List[str], directory: str):
         super().__init__()
 
         ui_path = os.path.join(os.path.dirname(__file__), 'bar.ui')
@@ -18,7 +23,9 @@ class ProgressBar(QtWidgets.QWidget):
 
         self.session: BMRBDepSession = session
         self.files: List[str] = files
+        self.directory: str = directory
         self.count: int = len(files)
+        self.upload_complete: bool = False
 
         # center window on screen
         qt_rectangle = self.frameGeometry()
@@ -31,7 +38,7 @@ class ProgressBar(QtWidgets.QWidget):
         self.progressBar.setValue(0)
 
         # initialize file uploader, connect uploader to gui
-        self.uploader: Uploader = Uploader(self.session, self.files)
+        self.uploader: Uploader = Uploader(self.session, self.files, self.directory)
         self.uploader.start()
         self.uploader.file_uploaded.connect(self.update_progress_bar)
         self.uploader.finished.connect(self.finished)
@@ -43,16 +50,18 @@ class ProgressBar(QtWidgets.QWidget):
 
     def finished(self) -> None:
         # runs after file upload finished
-        self.close()
+        self.upload_complete = True
         self.show_success()
+        self.close()
 
     def closeEvent(self, event) -> None:
-        # runs if user closes window in middle of upload
-        self.show_cancel()
-        sys.exit()
+        # handles user closing window in middle of upload
+        if not self.upload_complete:
+            self.uploader.stop_thread()
+            self.show_cancel()
+            sys.exit()
 
-    @staticmethod
-    def show_success() -> None:
+    def show_success(self) -> None:
         # show success message after upload complete
         msg = QMessageBox()
         msg.setWindowTitle("Upload complete")
@@ -73,22 +82,32 @@ class Uploader(QtCore.QThread):
     file_uploaded = pyqtSignal(int)
     finished = pyqtSignal()
 
-    def __init__(self, session, files):
+    def __init__(self, session, files, directory):
         super().__init__()
         self.session: BMRBDepSession = session
         self.files: List[str] = files
+        self.directory: str = directory
 
     def run(self):
         counter = 0
         for file in self.files:
-            self.session.upload_file(file)
+            try:
+                print(f'On file {file}')
+                self.session.upload_file(file, self.directory)
+            except requests.exceptions.HTTPError as err:
+                logging.exception("Encountered error when uploading file: %s\n%s", file, err)
+                raise IOError('Error occurred during attempt to upload file.')
+                # TODO: error above doesn't get raised to m2mtool, need to implement handling here
             counter += 1
             self.file_uploaded.emit(counter)
         self.finished.emit()
 
+    def stop_thread(self):
+        self.terminate()
 
-def run_progress_bar(session: BMRBDepSession, files: List[str]):
+
+def run_progress_bar(session: BMRBDepSession, files: List[str], directory: str):
     app = QtWidgets.QApplication([])
-    widget = ProgressBar(session, files)
+    widget = ProgressBar(session, files, directory)
     widget.show()
     app.exec_()
