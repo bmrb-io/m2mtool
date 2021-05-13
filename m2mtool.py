@@ -35,9 +35,6 @@ from html import escape as html_escape
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from helpers import ApiSession
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QMessageBox
-from configuration import configuration
 
 import bmrbdep
 

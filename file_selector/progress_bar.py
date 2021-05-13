@@ -3,14 +3,13 @@ import sys
 import logging
 from typing import List
 
-import requests
 from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMessageBox, QDesktopWidget
 
 from bmrbdep import BMRBDepSession
 
-logging.basicConfig(filename="debug.log", format='%(asctime)s %(name)s %(levelname)s %(message)s')
+logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 
@@ -42,11 +41,12 @@ class ProgressBar(QtWidgets.QWidget):
         self.uploader.start()
         self.uploader.file_uploaded.connect(self.update_progress_bar)
         self.uploader.finished.connect(self.finished)
+        self.uploader.error.connect(self.handle_error)
 
     def update_progress_bar(self, uploaded_count: int) -> None:
         # updates display of progress bar text/image
         self.label.setText(f'{uploaded_count} of {self.count} files uploaded...')
-        self.progressBar.setValue(uploaded_count / self.count * 100)
+        self.progressBar.setValue(int(uploaded_count / self.count * 100))
 
     def finished(self) -> None:
         # runs after file upload finished
@@ -61,7 +61,14 @@ class ProgressBar(QtWidgets.QWidget):
             self.show_cancel()
             sys.exit()
 
-    def show_success(self) -> None:
+    def handle_error(self, err: Exception, file: str) -> None:
+        self.uploader.stop_thread()
+        logging.exception("Encountered error when uploading file: %s\n%s", file, err)
+        self.show_error()
+        sys.exit(1)
+
+    @staticmethod
+    def show_success() -> None:
         # show success message after upload complete
         msg = QMessageBox()
         msg.setWindowTitle("Upload complete")
@@ -70,10 +77,18 @@ class ProgressBar(QtWidgets.QWidget):
 
     @staticmethod
     def show_cancel() -> None:
-        # show cancellation message if user closes window
+        # show cancellation message if window closed before upload done
         msg = QMessageBox()
         msg.setWindowTitle("Upload cancelled")
         msg.setText("Your deposition upload was cancelled.")
+        msg.exec_()
+
+    @staticmethod
+    def show_error() -> None:
+        # show cancellation message if window closed before upload done
+        msg = QMessageBox()
+        msg.setWindowTitle("Error")
+        msg.setText("Error occurred during file upload.\n\nPlease contact support@nmrbox.org.")
         msg.exec_()
 
 
@@ -81,6 +96,7 @@ class Uploader(QtCore.QThread):
     # this class handles the actual file upload
     file_uploaded = pyqtSignal(int)
     finished = pyqtSignal()
+    error = pyqtSignal(Exception, str)
 
     def __init__(self, session, files, directory):
         super().__init__()
@@ -92,12 +108,9 @@ class Uploader(QtCore.QThread):
         counter = 0
         for file in self.files:
             try:
-                print(f'On file {file}')
                 self.session.upload_file(file, self.directory)
-            except requests.exceptions.HTTPError as err:
-                logging.exception("Encountered error when uploading file: %s\n%s", file, err)
-                raise IOError('Error occurred during attempt to upload file.')
-                # TODO: error above doesn't get raised to m2mtool, need to implement handling here
+            except Exception as err:
+                self.error.emit(err, file)
             counter += 1
             self.file_uploaded.emit(counter)
         self.finished.emit()
