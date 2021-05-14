@@ -62,7 +62,6 @@ class ProgressBar(QtWidgets.QWidget):
             sys.exit()
 
     def handle_error(self, err: Exception, file: str) -> None:
-        self.uploader.stop_thread()
         logging.exception("Encountered error when uploading file: %s\n%s", file, err)
         self.show_error()
         sys.exit(1)
@@ -109,6 +108,8 @@ class Uploader(QtCore.QThread):
         counter = 0
         for file in self.files:
             try:
+                # if counter == 5:
+                #     raise Exception("exception")
                 self.session.upload_file(file, self.directory)
             except Exception as err:
                 self.error_occurred: bool = True
