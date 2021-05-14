@@ -6,6 +6,8 @@ import os
 import requests
 
 from configuration import configuration
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 # Set up logging
 logging.basicConfig()
@@ -78,6 +80,11 @@ class BMRBDepSession:
         Creates a python requests Session() and starts an BMRBDep session."""
         self.session = requests.Session()
 
+        # Allow a retry
+        retries = Retry(total=1, backoff_factor=2, status_forcelist=[429, 500, 502, 503, 504],
+                        method_whitelist=["POST", "DELETE"])
+        self.session.mount('https://', HTTPAdapter(max_retries=retries))
+
         # Don't create a new session if we already have a SID
         if self.sid:
             return
@@ -117,6 +124,7 @@ class BMRBDepSession:
         files = {'file': (file_name, open(os.path.join(path, file_name), 'rb'))}
 
         logging.info("Sending file '%s'.", file_name)
+
         r = self.session.post(url, files=files)
         if r.status_code != 200:
             logging.warning('Exception on server - server message: %s', r.text)
