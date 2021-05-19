@@ -71,27 +71,6 @@ def get_software(api: requests.Session, vm_id=None) -> dict:
 
     logging.info("Getting software information.")
 
-#     with PostgresHelper(database='staging') as cur:
-#         cur.execute('''
-# SELECT slug,url,software_path,version,synopsis
-#   FROM software as sw
-#   LEFT JOIN software_versions as sv
-#     ON sw.id = sv.software_id
-#   LEFT JOIN software_version_vm as svvm
-#     ON svvm.software_version_id = sv.id
-#   WHERE svvm.vm_id = %s''', [vm_id])
-#
-#         return {x['software_path']: x for x in cur}
-
-    # with requests.Session() as s:
-    #     try:
-    #         r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
-    #         r.raise_for_status()
-    #         r = s.get('https://apidev.nmrbox.org/user/get-software', params={'vm_id': vm_id})
-    #         r.raise_for_status()
-    #     except requests.exceptions.HTTPError as err:
-    #         logging.exception("Encountered error when retrieving software: \n%s", err)
-    #     return r.json()
     try:
         url = f"{configuration['api_root_url']}/user/dev/get-software"
         r = api.get(url, json={'vm_id': vm_id})
@@ -103,20 +82,6 @@ def get_software(api: requests.Session, vm_id=None) -> dict:
 
 
 def get_user_email(api: requests.Session) -> str:
-    # with PostgresHelper(database='staging') as cur:
-    #     cur.execute('''SELECT email FROM persons WHERE uid=%s''', [os.getuid()])
-    #     return cur.fetchone()['email']
-
-    # with requests.Session() as s:
-    #     try:
-    #         r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
-    #         r.raise_for_status()
-    #         r = s.get('https://apidev.nmrbox.org/user/person')
-    #         r.raise_for_status()
-    #     except requests.exceptions.HTTPError as err:
-    #         logging.exception("Encountered error when retrieving user info: \n%s", err)
-    #     return r.json()['data']['email']
-
     try:
         url = f"{configuration['api_root_url']}/user/person"
         r = api.get(url)
@@ -139,25 +104,6 @@ def get_entry_saveframe(api: requests.Session) -> list:
                             "Department_and_institution", "Address_1",
                             "Address_2", "Address_3", "City", "State_province",
                             "Country", "Postal_code", "Role", "Organization_type"])
-
-#     with PostgresHelper(database="staging") as cur:
-#         cur.execute('''
-# SELECT institution_type as user_type, ins.name AS institution, p.*
-# FROM persons as p
-#          LEFT JOIN institutions AS ins
-#                    ON ins.id = p.institution_id
-# WHERE p.uid = %s''', [os.getuid()])
-#         person = cur.fetchone()
-
-    # with requests.Session() as s:
-    #     try:
-    #         r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
-    #         r.raise_for_status()
-    #         r = s.get('https://apidev.nmrbox.org/user/get-person-institution')
-    #         r.raise_for_status()
-    #     except requests.exceptions.HTTPError as err:
-    #         logging.exception("Encountered error when retrieving person and institution info: \n%s", err)
-    #     person = r.json()
 
     try:
         url = f"{configuration['api_root_url']}/user/dev/get-person-institution"
@@ -256,23 +202,7 @@ def get_user_activity(api: requests.Session, directory: str) -> dict:
 
     logging.info("Fetching user command activity.")
 
-#     with PostgresHelper() as cur:
-#         cur.execute('''
-# SELECT current_dir,exe,command_line FROM usage.process
-#   WHERE uid = %s AND current_dir LIKE %s AND month = 11 and year=2020;''',
-#                     [os.getuid(), directory + "%"])
-#         return cur.fetchall()
-#
-#     with requests.Session() as s:
-#         try:
-#             r = s.get('https://apidev.nmrbox.org/user/automatic-login', params={'token': get_token()})
-#             r.raise_for_status()
-#             r = s.get('https://apidev.nmrbox.org/user/get-user-activity', params={'directory': directory})
-#             r.raise_for_status()
-#         except requests.exceptions.HTTPError as err:
-#             logging.exception("Encountered error when retrieving user activity: \n%s", err)
-#         return r.json()
-
+    # TODO: get-user-activity endpoint still needs to be finalized
     try:
         url = f"{configuration['api_root_url']}/user/dev/get-user-activity"
         r = api.get(url, json={'directory': directory})
@@ -286,7 +216,7 @@ def get_user_activity(api: requests.Session, directory: str) -> dict:
 def get_vm_version():
     """ Returns the version of the VM that is running."""
 
-    # Remove once the DB is updated
+    # TODO: Remove once the DB is updated
     return "2"
 
     # Get the NMRBox version from the xml
@@ -341,7 +271,6 @@ def create_deposition(path: str):
     nickname, selected_files = file_selector.run_file_selector(path)
 
     # Fetch the software list
-    # software = filter_software(get_software(), path)
     with ApiSession() as api:
         try:
             software = filter_software(api, get_software(api), path)
@@ -378,11 +307,11 @@ def create_deposition(path: str):
 
 
 # Run the code in this module
-if __name__ == '__main__':
-    test_path = "/home/nmrbox/0015/jchin/Qt5.12.10/"  # delete later
+def run_m2mtool():
+    test_path = "/home/nmrbox/0015/jchin/Qt5.12.10/"  # TODO: delete later
     try:
-        # create_deposition(sys.argv[1])  # restore later
-        create_deposition(test_path)  # delete later
+        # create_deposition(sys.argv[1])  # TODO: restore later
+        create_deposition(test_path)  # TODO: delete later
     except Exception as e:
         logging.critical(str(e))
         display_error(text=html_escape(str(e)))

@@ -81,7 +81,7 @@ class BMRBDepSession:
         self.session = requests.Session()
 
         # Allow a retry
-        retries = Retry(total=1, backoff_factor=2, status_forcelist=[429, 500, 502, 503, 504],
+        retries = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504],
                         method_whitelist=["POST", "DELETE"])
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
 

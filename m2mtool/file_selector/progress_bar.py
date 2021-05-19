@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMessageBox, QDesktopWidget
 
-from bmrbdep import BMRBDepSession
+from m2mtool.bmrbdep import BMRBDepSession
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
@@ -108,8 +108,6 @@ class Uploader(QtCore.QThread):
         counter = 0
         for file in self.files:
             try:
-                # if counter == 5:
-                #     raise Exception("exception")
                 self.session.upload_file(file, self.directory)
             except Exception as err:
                 self.error_occurred: bool = True
