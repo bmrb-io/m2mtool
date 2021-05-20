@@ -17,7 +17,7 @@ $(IDIR)/bin/m2mtool: $(IDIR)/bin/python
 	$(IDIR)/bin/pip install -r requirements.txt
 	$(IDIR)/bin/python setup.py install
 
-all: $(IDIR)/bin/validation
+all: $(IDIR)/bin/m2mtool
 
 clean:
 	rm -fr $(IDIR)
