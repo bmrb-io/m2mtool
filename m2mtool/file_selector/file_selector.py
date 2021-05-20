@@ -7,7 +7,6 @@ from PyQt5.QtWidgets import QStyle, QApplication, QDesktopWidget
 from PyQt5.QtGui import QIcon
 
 logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
 
 
 class FileSelector(QtWidgets.QWidget):

@@ -59,7 +59,6 @@ from configuration import configuration
 
 # Set up logging
 logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
 
 
 def get_software(api: requests.Session, vm_id=None) -> dict:
@@ -308,10 +307,8 @@ def create_deposition(path: str):
 
 # Run the code in this module
 def run_m2mtool():
-    test_path = "/home/nmrbox/0015/jchin/Qt5.12.10/"  # TODO: delete later
     try:
-        # create_deposition(sys.argv[1])  # TODO: restore later
-        create_deposition(test_path)  # TODO: delete later
+        create_deposition(sys.argv[1])
     except Exception as e:
         logging.critical(str(e))
         display_error(text=html_escape(str(e)))

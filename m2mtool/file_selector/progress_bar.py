@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import QMessageBox, QDesktopWidget
 from m2mtool.bmrbdep import BMRBDepSession
 
 logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
 
 
 class ProgressBar(QtWidgets.QWidget):
