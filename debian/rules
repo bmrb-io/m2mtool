@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+
+%:
+	dh $@
+
+override_dh_install:
+#	dh_install software_explorer /usr/software/python3.6
+#	dh_install software_explorer/LICENSE /usr/software/software_explorer
+	dh_install m2mtool.desktop /usr/share/applications
+#	dh_install wrapper/software_explorer /usr/software/bin
+	#specify non-standard source directory
+	dh_install --sourcedir=/ usr/software/m2mtool /usr/software
+

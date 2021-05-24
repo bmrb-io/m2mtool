@@ -1,0 +1,13 @@
+Source: nmrbox-admin-m2mtool
+Section: admin
+Priority: optional
+Maintainer: Jon Wedell <wedell@bmrb.wisc.edu>
+Build-Depends: debhelper (>= 10)
+Standards-Version: 4.1.2
+Homepage: https://www.nmrbox.org
+
+Package: nmrbox-admin-m2mtool
+Architecture: all
+Depends: ${misc:Depends}
+Description: Tool for uploading deposition to BMRB
+ Tool for uploading deposition to BMRB
