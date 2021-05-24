@@ -4,7 +4,7 @@ import os
 import dbus
 import requests
 
-from configuration import configuration
+from m2mtool.configuration import configuration
 
 
 class ApiSession:

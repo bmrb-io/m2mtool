@@ -5,7 +5,7 @@ import os
 
 import requests
 
-from configuration import configuration
+from m2mtool.configuration import configuration
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 

@@ -28,15 +28,14 @@ import os
 import sys
 import time
 import webbrowser
-
-import file_selector as file_selector
 import xml.etree.cElementTree as ET
 from html import escape as html_escape
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from helpers import ApiSession
 
-import bmrbdep
+import m2mtool.bmrbdep as bmrbdep
+import m2mtool.file_selector as file_selector
+from m2mtool.helpers import ApiSession
 
 try:
     from zenipy import error as display_error, entry as get_input
@@ -55,7 +54,7 @@ import requests
 #########################
 
 # Load the configuration
-from configuration import configuration
+from m2mtool.configuration import configuration
 
 # Set up logging
 logging.basicConfig()
@@ -267,7 +266,7 @@ def create_deposition(path: str):
         sys.exit(0)
 
     # Run the file selector
-    nickname, selected_files = file_selector.file_selector.run_file_selector(path)
+    nickname, selected_files = file_selector.run_file_selector(path)
 
     # Fetch the software list
     with ApiSession() as api:
@@ -286,7 +285,7 @@ def create_deposition(path: str):
                                             nickname=nickname) as bmrbdep_session:
 
                     # Run the progress bar, which handles uploading of data files
-                    file_selector.progress_bar.run_progress_bar(bmrbdep_session, selected_files, path)
+                    file_selector.run_progress_bar(bmrbdep_session, selected_files, path)
 
                     # Delete the metadata file from the "upload file" list
                     bmrbdep_session.delete_file('m2mtool_generated.str')
@@ -300,16 +299,14 @@ def create_deposition(path: str):
                 time.sleep(3)
 
         except IOError as err:
-            file_selector.error_message.show_error(err)
+            file_selector.show_error(err)
 
     return 0
 
 
 # Run the code in this module
 def run_m2mtool():
-    test = "/home/nmrbox/0015/jchin/Qt5.12.10/"
     try:
-        # create_deposition(sys.argv[1])
         create_deposition(test)
     except Exception as e:
         logging.critical(str(e))
