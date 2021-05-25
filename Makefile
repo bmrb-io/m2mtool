@@ -16,7 +16,7 @@ $(IDIR)/lib/python3.6/site-packages/cursesmenu: $(IDIR)/bin/python
 	$(IDIR)/bin/pip install -U pip
 	$(IDIR)/bin/pip install -r requirements.txt
 
-$(IDIR)/bin/m2mtool: version $(IDIR)/lib/python3.6/site-packages/cursesmenu
+$(IDIR)/bin/m2mtool: $(IDIR)/lib/python3.6/site-packages/cursesmenu
 	$(IDIR)/bin/python setup.py install
 
 all: $(IDIR)/bin/m2mtool
