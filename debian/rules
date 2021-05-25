@@ -8,7 +8,8 @@
 	dh $@
 
 override_dh_install:
-	dh_install m2mtool.desktop /usr/share/applications
+	dh_install m2mtool.desktop /usr/software/m2mtool
+	#TO DO LATER: dh_install icon.png /usr/share/icons/
 	#specify non-standard source directory
 	dh_install --sourcedir=/ usr/software/m2mtool /usr/software
 
