@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=BMRB Upload Tool
-Type=Application
-Terminal=False
-Encoding=UTF-8
-Exec=/usr/software/m2mtool/bin/m2mtool
-#add line for icon
-Categories=All NMRbox software
