@@ -84,7 +84,7 @@ def create_deposition(path) -> None:
 
         try:
             with NamedTemporaryFile() as star_file:
-                star_file.write(r.text)
+                star_file.write(r.text.encode())
                 star_file.flush()
                 star_file.seek(0)
 
