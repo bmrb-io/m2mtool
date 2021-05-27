@@ -1,6 +1,5 @@
-pip==21.1
+pip==21.1.2
 requests==2.25.1
-zenipy==0.1.5
 pynmrstar==3.1.1
 PyQt5~=5.15.4
 dbus-python
