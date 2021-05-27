@@ -8,7 +8,6 @@
 	dh $@
 
 override_dh_install:
-	dh_install bmrb-32x32.png /usr/share/icons/
 	dh_install bmrb-192x192.png /usr/share/icons/
 	#specify non-standard source directory
 	dh_install --sourcedir=/ usr/software/m2mtool /usr/software

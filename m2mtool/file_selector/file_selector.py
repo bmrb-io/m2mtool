@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from typing import List, Tuple
 
@@ -19,6 +20,7 @@ class FileSelector(QtWidgets.QWidget):
         self.nickname: str = ''
         self.directory: str = directory
         self.selected_files: List[str] = []
+        self.select_submitted: bool = False
 
         # center window on screen
         qt_rectangle = self.frameGeometry()
@@ -75,19 +77,26 @@ class FileSelector(QtWidgets.QWidget):
         # retrieve deposition nickname
         self.nickname = self.plainTextEdit_nickname.toPlainText()
 
+        # set to true to ensure code in closeEvent method does not run
+        self.select_submitted = True
+
         # close window
         self.close()
 
     def add_subdirectory_files(self, subdirectory) -> None:
         # adds files from subdirectory to self.selected_files
-        for each in os.listdir(os.path.join(os.path.dirname(self.directory), subdirectory)):
-            if os.path.isfile(os.path.join(os.path.dirname(self.directory), subdirectory, each)):
+        for each in os.listdir(os.path.join(self.directory, subdirectory)):
+            if os.path.isfile(os.path.join(self.directory, subdirectory, each)):
                 self.selected_files.append(f'{subdirectory}/{each}')
-            elif os.path.isdir(os.path.join(os.path.dirname(self.directory), subdirectory, each)):
+            elif os.path.isdir(os.path.join(self.directory, subdirectory, each)):
                 self.add_subdirectory_files(f'{subdirectory}/{each}')
 
     def cancel(self) -> None:
         self.close()
+
+    def closeEvent(self, event) -> None:
+        if not self.select_submitted:
+            sys.exit()
 
 
 def run_file_selector(directory: str) -> Tuple[str, List[str]]:
