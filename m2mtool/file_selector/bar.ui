@@ -6,46 +6,103 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>357</width>
-    <height>126</height>
+    <width>392</width>
+    <height>163</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Uploading Files...</string>
   </property>
-  <widget class="QProgressBar" name="progressBar">
+  <widget class="QStackedWidget" name="stackedWidget">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>35</y>
-     <width>270</width>
-     <height>21</height>
+     <x>20</x>
+     <y>20</y>
+     <width>351</width>
+     <height>111</height>
     </rect>
    </property>
-   <property name="value">
+   <property name="currentIndex">
     <number>0</number>
    </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>45</x>
-     <y>80</y>
-     <width>261</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <italic>true</italic>
-    </font>
-   </property>
-   <property name="text">
-    <string>0 of 0 files uploaded...</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignCenter</set>
-   </property>
+   <widget class="QWidget" name="page_init">
+    <widget class="QLabel" name="label_init">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>15</y>
+       <width>321</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <italic>true</italic>
+      </font>
+     </property>
+     <property name="text">
+      <string>Processing your request... Closing this window will cancel your upload. Please wait, this could take a while...</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignJustify|Qt::AlignVCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QProgressBar" name="progressBar_init">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>80</y>
+       <width>118</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="value">
+      <number>0</number>
+     </property>
+     <property name="textVisible">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="page_upload">
+    <widget class="QProgressBar" name="progressBar_upload">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>30</y>
+       <width>270</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="value">
+      <number>0</number>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_upload">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>75</y>
+       <width>261</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <italic>true</italic>
+      </font>
+     </property>
+     <property name="text">
+      <string>0 of 0 files uploaded...</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </widget>
   </widget>
  </widget>
  <resources/>

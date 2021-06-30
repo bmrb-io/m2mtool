@@ -1,5 +1,4 @@
 {
-    "bmrbdep_root_url": "https://dev-deposit.bmrb.io",
-    "api_root_url": "https://api.nmrbox.org",
-    "latest_vm_version": "2"
+    "bmrbdep_root_url": "https://deposit.bmrb.io",
+    "api_root_url": "https://api.nmrbox.org"
 }
