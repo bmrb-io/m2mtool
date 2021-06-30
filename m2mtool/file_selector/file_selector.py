@@ -4,7 +4,7 @@ import logging
 from typing import List, Tuple
 
 from PyQt5 import QtWidgets, QtCore, uic
-from PyQt5.QtWidgets import QStyle, QApplication, QDesktopWidget
+from PyQt5.QtWidgets import QStyle, QApplication, QDesktopWidget, QMessageBox
 from PyQt5.QtGui import QIcon
 
 logging.basicConfig()
@@ -40,16 +40,18 @@ class FileSelector(QtWidgets.QWidget):
         def alpha_and_folder(item) -> Tuple[bool, str]:
             return os.path.isfile(os.path.join(self.directory, item)), item.lower()
 
-        # sort the files/subdirectories alphabetically and by item type (file v. folder)
+        # sort the files/subdirectories by item type (folder vs file) and alphabetically
         sorted_directory = sorted(os.listdir(self.directory), key=alpha_and_folder)
 
         # add each file and subdirectory to the list widget
         for each in sorted_directory:
             list_item = QtWidgets.QListWidgetItem()
-            if os.path.isfile(os.path.join(self.directory, each)):
+            if os.path.isfile(os.path.join(self.directory, each)) and os.access((os.path.join(self.directory,
+                                                                                              each)), os.W_OK):
                 list_item.setIcon(QIcon(QApplication.style().standardIcon(QStyle.SP_FileIcon)))
                 list_item.setData(QtCore.Qt.UserRole, "file")
-            elif os.path.isdir(os.path.join(self.directory, each)):
+            elif os.path.isdir(os.path.join(self.directory, each)) and os.access((os.path.join(self.directory,
+                                                                                               each)), os.R_OK):
                 list_item.setIcon(QIcon(QApplication.style().standardIcon(QStyle.SP_DirIcon)))
                 list_item.setData(QtCore.Qt.UserRole, "subdirectory")
             else:
@@ -60,6 +62,12 @@ class FileSelector(QtWidgets.QWidget):
             self.listWidget_files.addItem(list_item)
 
     def submit(self) -> None:
+        # retrieve deposition nickname
+        self.nickname = self.plainTextEdit_nickname.toPlainText()
+        if not self.nickname:
+            self.show_nickname_msg()
+            return
+
         # add selected files to self.selected_files and create list of selected subdirectories
         selected_subdirectories = []
 
@@ -74,9 +82,6 @@ class FileSelector(QtWidgets.QWidget):
         for subdir in selected_subdirectories:
             self.add_subdirectory_files(subdir)
 
-        # retrieve deposition nickname
-        self.nickname = self.plainTextEdit_nickname.toPlainText()
-
         # set to true to ensure code in closeEvent method does not run
         self.select_submitted = True
 
@@ -86,10 +91,20 @@ class FileSelector(QtWidgets.QWidget):
     def add_subdirectory_files(self, subdirectory) -> None:
         # adds files from subdirectory to self.selected_files
         for each in os.listdir(os.path.join(self.directory, subdirectory)):
-            if os.path.isfile(os.path.join(self.directory, subdirectory, each)):
+            if os.path.isfile(os.path.join(self.directory, subdirectory, each)) and os.access((os.path.join(
+                    self.directory, subdirectory, each)), os.W_OK):
                 self.selected_files.append(f'{subdirectory}/{each}')
-            elif os.path.isdir(os.path.join(self.directory, subdirectory, each)):
+            elif os.path.isdir(os.path.join(self.directory, subdirectory, each)) and os.access((os.path.join(
+                    self.directory, subdirectory, each)), os.R_OK):
                 self.add_subdirectory_files(f'{subdirectory}/{each}')
+
+    @staticmethod
+    def show_nickname_msg() -> None:
+        # show message if no nickname provided
+        msg = QMessageBox()
+        msg.setWindowTitle("Nickname needed")
+        msg.setText("Deposition nickname is required.")
+        msg.exec_()
 
     def cancel(self) -> None:
         self.close()
