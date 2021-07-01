@@ -149,7 +149,8 @@ class Uploader(QtCore.QThread):
         self.session_file: str = session_file
         self.error_occurred: bool = False
 
-    def get_vm_version(self) -> str:
+    @staticmethod
+    def get_vm_version() -> str:
         # returns the version of the VM that is running
         try:
             with open('/etc/nmrbox.d/motd-identifier', 'r') as motd:
