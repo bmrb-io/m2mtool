@@ -132,7 +132,7 @@ class FileSelector(QtWidgets.QWidget):
     def subdirectory_contains_prohibited(self, subdirectory: str) -> bool:
         # check if folder contains any prohibited item, if so return True
         if self.flag:
-            return True
+            return self.flag
         for item in os.listdir(subdirectory):
             if os.path.isfile(os.path.join(subdirectory, item)) and not os.access((os.path.join(
                     subdirectory, item)), os.R_OK):
