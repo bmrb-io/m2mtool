@@ -17,22 +17,22 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>20</y>
+     <y>10</y>
      <width>351</width>
-     <height>111</height>
+     <height>141</height>
     </rect>
    </property>
    <property name="currentIndex">
     <number>0</number>
    </property>
    <widget class="QWidget" name="page_init">
-    <widget class="QLabel" name="label_init">
+    <widget class="QLabel" name="label_init_2">
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>15</y>
+       <y>45</y>
        <width>321</width>
-       <height>41</height>
+       <height>45</height>
       </rect>
      </property>
      <property name="font">
@@ -41,7 +41,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Processing your request... Closing this window will cancel your upload. Please wait, this could take a while...</string>
+      <string>Closing this window will cancel your upload. Please wait, this could take a while.</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>
@@ -54,7 +54,7 @@
      <property name="geometry">
       <rect>
        <x>120</x>
-       <y>80</y>
+       <y>103</y>
        <width>118</width>
        <height>23</height>
       </rect>
@@ -66,13 +66,34 @@
       <bool>false</bool>
      </property>
     </widget>
+    <widget class="QLabel" name="label_init_1">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>15</y>
+       <width>321</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <italic>true</italic>
+      </font>
+     </property>
+     <property name="text">
+      <string>Preparing your deposition... </string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignJustify|Qt::AlignVCenter</set>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="page_upload">
     <widget class="QProgressBar" name="progressBar_upload">
      <property name="geometry">
       <rect>
        <x>40</x>
-       <y>30</y>
+       <y>40</y>
        <width>270</width>
        <height>21</height>
       </rect>
@@ -85,7 +106,7 @@
      <property name="geometry">
       <rect>
        <x>40</x>
-       <y>75</y>
+       <y>90</y>
        <width>261</width>
        <height>21</height>
       </rect>

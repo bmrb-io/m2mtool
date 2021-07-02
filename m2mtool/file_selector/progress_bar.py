@@ -81,7 +81,6 @@ class ProgressBar(QtWidgets.QWidget):
 
         # open the session
         webbrowser.open_new_tab(session_url)
-        time.sleep(3)
 
     def closeEvent(self, event) -> None:
         # handles user closing window in middle of upload

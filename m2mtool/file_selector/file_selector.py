@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import emoji
 from typing import List, Tuple
 
 from PyQt5 import QtWidgets, QtCore, uic
@@ -21,6 +22,8 @@ class FileSelector(QtWidgets.QWidget):
         self.directory: str = directory
         self.selected_files: List[str] = []
         self.select_submitted: bool = False
+        self.flag: bool = False
+        self.warning: bool = False
 
         # center window on screen
         qt_rectangle = self.frameGeometry()
@@ -35,35 +38,72 @@ class FileSelector(QtWidgets.QWidget):
         self.pushButton_submit.clicked.connect(self.submit)
         self.pushButton_cancel.clicked.connect(self.cancel)
 
+        # show warning if there are any files/folders which user does not have permission to upload
+        if self.warning:
+            self.show_warning_msg()
+
     def populate_files(self) -> None:
 
         def alpha_and_folder(item) -> Tuple[bool, str]:
+            # sort by item type (folder vs file) and alphabetically
             return os.path.isfile(os.path.join(self.directory, item)), item.lower()
+
+        def set_prohibited_item(prohibited_item: QtWidgets.QListWidgetItem, item_type: str) -> None:
+            # add list item that user does not have permission to upload
+            prohibited_item.setText(f'{each} {emoji.emojize(":warning:")}')
+            prohibited_item.setForeground(QtCore.Qt.gray)
+            prohibited_item.setToolTip(f'You do not have permission to upload this {item_type}')
+            prohibited_item.setFlags(list_item.flags() & ~QtCore.Qt.ItemIsUserCheckable)
+            prohibited_item.setCheckState(QtCore.Qt.Unchecked)
+
+        def set_permitted_item(permitted_item: QtWidgets.QListWidgetItem, item_type: str) -> None:
+            # add list item that user does have permission to upload
+            permitted_item.setText(each)
+            permitted_item.setData(QtCore.Qt.UserRole, item_type)
+            permitted_item.setFlags(list_item.flags() | QtCore.Qt.ItemIsUserCheckable)
+            permitted_item.setCheckState(QtCore.Qt.Checked)
+
+        def set_restricted_item(restricted_item: QtWidgets.QListWidgetItem) -> None:
+            # add list item (only applies to subdirectories, not files) that user does have full access to
+            restricted_item.setText(f'{each} {emoji.emojize(":warning:")}')
+            restricted_item.setForeground(QtCore.Qt.red)
+            restricted_item.setToolTip(f'At least some files/subfolders in this folder cannot be uploaded (you do '
+                                       f'not have permission)')
+            restricted_item.setData(QtCore.Qt.UserRole, "subdirectory")
+            restricted_item.setFlags(list_item.flags() | QtCore.Qt.ItemIsUserCheckable)
+            restricted_item.setCheckState(QtCore.Qt.Checked)
 
         # sort the files/subdirectories by item type (folder vs file) and alphabetically
         sorted_directory = sorted(os.listdir(self.directory), key=alpha_and_folder)
 
-        # add each file and subdirectory to the list widget
+        # add each file and subdirectory to the list widget based on user permission
         for each in sorted_directory:
             list_item = QtWidgets.QListWidgetItem()
-            if os.path.isfile(os.path.join(self.directory, each)) and os.access((os.path.join(self.directory,
-                                                                                              each)), os.W_OK):
+            if os.path.isfile(os.path.join(self.directory, each)):
                 list_item.setIcon(QIcon(QApplication.style().standardIcon(QStyle.SP_FileIcon)))
-                list_item.setData(QtCore.Qt.UserRole, "file")
-            elif os.path.isdir(os.path.join(self.directory, each)) and os.access((os.path.join(self.directory,
-                                                                                               each)), os.R_OK):
+                if not os.access(os.path.join(self.directory, each), os.R_OK):
+                    set_prohibited_item(list_item, "file")
+                    self.warning = True
+                else:
+                    set_permitted_item(list_item, "file")
+            elif os.path.isdir(os.path.join(self.directory, each)):
                 list_item.setIcon(QIcon(QApplication.style().standardIcon(QStyle.SP_DirIcon)))
-                list_item.setData(QtCore.Qt.UserRole, "subdirectory")
+                self.flag = False
+                if not os.access(os.path.join(self.directory, each), os.X_OK | os.R_OK):
+                    set_prohibited_item(list_item, "subdirectory")
+                    self.warning = True
+                elif self.subdirectory_contains_prohibited(os.path.join(self.directory, each)):
+                    set_restricted_item(list_item)
+                    self.warning = True
+                else:
+                    set_permitted_item(list_item, "subdirectory")
             else:
                 continue
-            list_item.setText(each)
-            list_item.setFlags(list_item.flags() | QtCore.Qt.ItemIsUserCheckable)
-            list_item.setCheckState(QtCore.Qt.Checked)
             self.listWidget_files.addItem(list_item)
 
     def submit(self) -> None:
         # retrieve deposition nickname
-        self.nickname = self.plainTextEdit_nickname.toPlainText()
+        self.nickname = self.plainTextEdit_nickname.toPlainText().strip()
         if not self.nickname:
             self.show_nickname_msg()
             return
@@ -76,7 +116,8 @@ class FileSelector(QtWidgets.QWidget):
                 if self.listWidget_files.item(index).data(QtCore.Qt.UserRole) == "file":
                     self.selected_files.append(self.listWidget_files.item(index).text())
                 elif self.listWidget_files.item(index).data(QtCore.Qt.UserRole) == "subdirectory":
-                    selected_subdirectories.append(self.listWidget_files.item(index).text())
+                    selected_subdirectories.append(self.listWidget_files.item(index).text().
+                                                   strip(f' {emoji.emojize(":warning:")}'))
 
         # recursively add files from selected subdirectories to selected_files list
         for subdir in selected_subdirectories:
@@ -88,15 +129,40 @@ class FileSelector(QtWidgets.QWidget):
         # close window
         self.close()
 
-    def add_subdirectory_files(self, subdirectory) -> None:
+    def subdirectory_contains_prohibited(self, subdirectory: str) -> bool:
+        # check if folder contains any prohibited item, if so return True
+        if self.flag:
+            return True
+        for item in os.listdir(subdirectory):
+            if os.path.isfile(os.path.join(subdirectory, item)) and not os.access((os.path.join(
+                    subdirectory, item)), os.R_OK):
+                self.flag = True
+            elif os.path.isdir(os.path.join(subdirectory, item)) and not os.access((os.path.join(
+                    subdirectory, item)), os.X_OK | os.R_OK):
+                self.flag = True
+            elif os.path.isdir(os.path.join(subdirectory, item)) and os.access((os.path.join(
+                    subdirectory, item)), os.X_OK | os.R_OK):
+                self.subdirectory_contains_prohibited(f'{subdirectory}/{item}')
+        return self.flag
+
+    def add_subdirectory_files(self, subdirectory: str) -> None:
         # adds files from subdirectory to self.selected_files
         for each in os.listdir(os.path.join(self.directory, subdirectory)):
             if os.path.isfile(os.path.join(self.directory, subdirectory, each)) and os.access((os.path.join(
-                    self.directory, subdirectory, each)), os.W_OK):
+                    self.directory, subdirectory, each)), os.R_OK):
                 self.selected_files.append(f'{subdirectory}/{each}')
             elif os.path.isdir(os.path.join(self.directory, subdirectory, each)) and os.access((os.path.join(
-                    self.directory, subdirectory, each)), os.R_OK):
+                    self.directory, subdirectory, each)), os.X_OK | os.R_OK):
                 self.add_subdirectory_files(f'{subdirectory}/{each}')
+
+    @staticmethod
+    def show_warning_msg() -> None:
+        # show message if no nickname provided
+        msg = QMessageBox()
+        msg.setWindowTitle("Warning")
+        msg.setText("There are some files/folders in this directory which you do not have permission to upload. "
+                    f"(Please hover over list items with a warning symbol next to them for details.)")
+        msg.exec_()
 
     @staticmethod
     def show_nickname_msg() -> None:
